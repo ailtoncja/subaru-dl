@@ -28,8 +28,8 @@ import Logs from './paginas/Logs'
 
 const PAGINAS: Array<{ id: Pagina; nome: string; icone: typeof Download }> = [
   { id: 'inicio', nome: 'Início', icone: Download },
-  { id: 'downloads', nome: 'Downloads', icone: History },
   { id: 'galeria', nome: 'Galeria', icone: Images },
+  { id: 'downloads', nome: 'Downloads', icone: History },
   { id: 'logs', nome: 'Logs', icone: ScrollText },
   { id: 'dependencias', nome: 'Dependências', icone: Package },
   { id: 'configuracoes', nome: 'Configurações', icone: Settings }

@@ -23,10 +23,11 @@ import {
 import { useEffect, useMemo, useState, type DragEvent } from 'react'
 import { bytes, duracao, numeroCurto, tempoRelativo, velocidade } from '@shared/formatar'
 import { estimarTamanho, FORMATOS_AUDIO, BITRATES, QUALIDADES } from '@shared/formatos'
-import type { Duplicado, InfoMidia, OpcoesDownload } from '@shared/tipos'
+import type { Duplicado, InfoMidia, ItemLote, OpcoesDownload } from '@shared/tipos'
 import { CampoPasta, SelecaoOrganizar } from '../componentes/Destino'
 import OpcoesAvancadas, { expandir, ListaPlaylist } from '../componentes/OpcoesAvancadas'
-import { adicionarLinks, avisar, extrairLinks, useEstado } from '../estado'
+import { adicionarLote, avisar, extrairLinks, useEstado } from '../estado'
+import { juntarLinks, ListaLinks, type LinhaLink } from '../componentes/ListaLinks'
 
 const SUFIXO: Record<string, string> = { '4320': '8K', '2160': '4K UHD', '1440': '2K QHD', '1080': 'FHD', '720': 'HD', '480': 'SD', '360': '' }
 
@@ -46,7 +47,7 @@ export default function Inicio() {
   const [avancado, setAvancado] = useState(false)
   const [verLista, setVerLista] = useState(false)
   /** Vários links de uma vez (um por linha): mostra o cartão de lote em vez da prévia */
-  const [lote, setLote] = useState<string | null>(null)
+  const [lote, setLote] = useState<LinhaVideo[] | null>(null)
   const [arrastando, setArrastando] = useState(false)
 
   const ler = async (url: string) => {
@@ -54,7 +55,7 @@ export default function Inicio() {
     if (!links.length) return setErro('Cole um link que comece com http')
     // Vários links: cartão de lote, com as mesmas opções para todos
     if (links.length > 1) {
-      setLote((atual) => [...new Set([...(atual ? extrairLinks(atual) : []), ...links])].join('\n'))
+      setLote((atual) => juntarLinks(atual ?? [], links, novaLinhaVideo))
       setPrevia(null)
       setErro('')
       setTexto('')
@@ -69,7 +70,8 @@ export default function Inicio() {
       const r = await window.api.lerLink(links[0])
       setPrevia({ url: links[0], ...r })
       setOpcoes(structuredClone(useEstado.getState().config!.padrao))
-      setVerLista(false)
+      // Playlist: a lista para escolher os vídeos já vem aberta
+      setVerLista(!!r.info.playlist)
     } catch (e) {
       setErro(e instanceof Error ? e.message.replace(/^Error invoking remote method '\w+': (Error: )?/, '') : String(e))
     } finally {
@@ -270,7 +272,7 @@ export default function Inicio() {
         </div>
       )}
 
-      {lote !== null && !carregando && <CartaoLote texto={lote} setTexto={setLote} fechar={() => setLote(null)} />}
+      {lote !== null && !carregando && <CartaoLote linhas={lote} setLinhas={setLote} fechar={() => setLote(null)} />}
 
       {avancado && previa && (
         <OpcoesAvancadas titulo="Opções avançadas" info={previa.info} opcoes={opcoes} mudar={mudar} aoFechar={() => setAvancado(false)} />
@@ -448,8 +450,18 @@ function CartaoPrevia({
   )
 }
 
-/** Vários links de uma vez, com as mesmas opções para todos (antiga página Playlists & Lote). */
-function CartaoLote({ texto, setTexto, fechar }: { texto: string; setTexto: (t: string) => void; fechar: () => void }) {
+/** Um link da lista do Início, com a prévia lida sob demanda e os vídeos escolhidos da playlist. */
+interface LinhaVideo extends LinhaLink {
+  info: InfoMidia | null
+  carregando: boolean
+  erro: string | null
+  itensPlaylist: string
+}
+
+const novaLinhaVideo = (url: string): LinhaVideo => ({ url, pasta: null, aberto: false, info: null, carregando: false, erro: null, itensPlaylist: '' })
+
+/** Vários links de uma vez: opções comuns, mas pasta e vídeos escolhidos por link. */
+function CartaoLote({ linhas, setLinhas, fechar }: { linhas: LinhaVideo[]; setLinhas: (f: (l: LinhaVideo[] | null) => LinhaVideo[] | null) => void; fechar: () => void }) {
   const config = useEstado((s) => s.config)!
   // Em lote, organizar por playlist costuma ser o mais útil
   const [o, setO] = useState<OpcoesDownload>(() => ({
@@ -458,30 +470,84 @@ function CartaoLote({ texto, setTexto, fechar }: { texto: string; setTexto: (t: 
   }))
   const [avancado, setAvancado] = useState(false)
   const mudar = (p: Partial<OpcoesDownload>) => setO((atual) => ({ ...atual, ...p }))
-  const links = [...new Set(extrairLinks(texto))]
+  const pastaComum = o.pasta ?? (o.modo === 'audio' ? config.pastaAudio : config.pastaVideo)
+
+  const mudarLinha = (i: number, p: Partial<LinhaVideo>) => setLinhas((ls) => ls && ls.map((l, n) => (n === i ? { ...l, ...p } : l)))
+
+  // "Ver": lê a prévia do link (uma vez só)
+  const abrir = async (i: number) => {
+    const l = linhas[i]
+    if (!l || l.info || l.carregando) return
+    mudarLinha(i, { carregando: true, erro: null })
+    try {
+      const r = await window.api.lerLink(l.url)
+      setLinhas((ls) => ls && ls.map((x) => (x.url === l.url ? { ...x, info: r.info, carregando: false } : x)))
+    } catch (e) {
+      const erro = e instanceof Error ? e.message.replace(/^Error invoking remote method '\w+': (Error: )?/, '') : String(e)
+      setLinhas((ls) => ls && ls.map((x) => (x.url === l.url ? { ...x, erro, carregando: false } : x)))
+    }
+  }
 
   const enviar = async (iniciar: boolean) => {
-    if (!links.length) return avisar('Nenhum link na lista', 'erro')
-    const n = await adicionarLinks(links, iniciar, o)
-    if (n) {
-      avisar(`${n} link(s) na fila`)
-      fechar()
-      useEstado.getState().ir('downloads')
-    }
+    if (!linhas.length) return avisar('Nenhum link na lista', 'erro')
+    if (linhas.some((l) => l.itensPlaylist === '0')) return avisar('Há uma playlist sem nenhum vídeo marcado', 'erro')
+    const lote: ItemLote[] = linhas.map((l) => ({
+      url: l.url,
+      info: l.info,
+      opcoes: { ...o, pasta: l.pasta ?? o.pasta, itensPlaylist: l.itensPlaylist }
+    }))
+    const n = await adicionarLote(lote, iniciar)
+    if (n) avisar(`${n} link(s) na fila`)
+    fechar()
+    if (n) useEstado.getState().ir('downloads')
   }
 
   return (
     <div className="cartao recheado" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <div className="flex">
-        <ListVideo className="amarelo" width={19} />
-        <strong className="flex-1">
-          {links.length} links <span className="muted pequeno">· vídeos, playlists ou canais, com as mesmas opções para todos</span>
-        </strong>
-        <button className="icone-btn leve" title="Fechar" onClick={fechar}>
-          <X />
-        </button>
-      </div>
-      <textarea className="mono" style={{ minHeight: 120 }} value={texto} onChange={(e) => setTexto(e.target.value)} />
+      <ListaLinks
+        linhas={linhas}
+        mudarLinha={mudarLinha}
+        remover={(i) => setLinhas((ls) => (ls && ls.length > 1 ? ls.filter((_, n) => n !== i) : null))}
+        acrescentar={(urls) => setLinhas((ls) => juntarLinks(ls ?? [], urls, novaLinhaVideo))}
+        limpar={fechar}
+        pastaComum={pastaComum}
+        aoAbrir={abrir}
+        info={(l) => {
+          const pl = l.info?.playlist
+          return {
+            titulo: l.info?.titulo,
+            miniatura: l.info?.miniatura,
+            carregando: l.carregando,
+            erro: l.erro,
+            resumo: pl ? `${expandir(l.itensPlaylist, pl.total).size} de ${pl.total} vídeos` : l.info?.duracao != null ? duracao(l.info.duracao) : null
+          }
+        }}
+        previa={(l, i) =>
+          l.carregando ? (
+            <span className="muted pequeno flex">
+              <Loader2 className="girando" width={15} /> Lendo o link…
+            </span>
+          ) : l.erro ? (
+            <span className="erro-texto pequeno">{l.erro}</span>
+          ) : l.info?.playlist ? (
+            <ListaPlaylist info={l.info} o={{ ...o, itensPlaylist: l.itensPlaylist }} mudar={(p) => p.itensPlaylist !== undefined && mudarLinha(i, { itensPlaylist: p.itensPlaylist })} />
+          ) : l.info ? (
+            <div className="flex" style={{ gap: 14, alignItems: 'flex-start' }}>
+              {l.info.miniatura && <div className="miniatura" style={{ backgroundImage: `url("${l.info.miniatura}")` }} />}
+              <div className="flex-1" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <strong className="selecionavel">{l.info.titulo}</strong>
+                <span className="muted pequeno">
+                  {[l.info.canal, l.info.site, duracao(l.info.duracao), l.info.views != null ? `${numeroCurto(l.info.views)} visualizações` : null].filter(Boolean).join(' · ')}
+                </span>
+                {(() => {
+                  const e = estimarTamanho(l.info, o)
+                  return e ? <span className="mono pequeno amarelo">Tamanho estimado: {e.aproximado ? '~' : ''}{bytes(e.bytes)}</span> : null
+                })()}
+              </div>
+            </div>
+          ) : null
+        }
+      />
 
       <div className="previa" style={{ display: 'block', padding: 0 }}>
         <div className="opcoes">
@@ -528,7 +594,10 @@ function CartaoLote({ texto, setTexto, fechar }: { texto: string; setTexto: (t: 
           )}
         </div>
         <div className="rodape-previa" style={{ marginTop: 14 }}>
-          <CampoPasta pasta={o.pasta} modo={o.modo} aoMudar={(pasta) => mudar({ pasta })} />
+          <span className="flex" style={{ gap: 6 }}>
+            <span className="muted">Pasta comum:</span>
+            <CampoPasta pasta={o.pasta} modo={o.modo} aoMudar={(pasta) => mudar({ pasta })} semRotulo />
+          </span>
           <SelecaoOrganizar o={o} mudar={mudar} compacto />
           {o.modo === 'video' && (
             <label>
@@ -543,10 +612,10 @@ function CartaoLote({ texto, setTexto, fechar }: { texto: string; setTexto: (t: 
       </div>
 
       <div className="flex" style={{ justifyContent: 'flex-end' }}>
-        <button className="btn" disabled={!links.length} onClick={() => enviar(false)}>
+        <button className="btn" disabled={!linhas.length} onClick={() => enviar(false)}>
           <ListPlus /> Adicionar à fila
         </button>
-        <button className="btn primario grande" disabled={!links.length} onClick={() => enviar(true)}>
+        <button className="btn primario grande" disabled={!linhas.length} onClick={() => enviar(true)}>
           <Download /> Baixar tudo
         </button>
       </div>

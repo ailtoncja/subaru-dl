@@ -10,7 +10,8 @@ export function DialogoDuplicados() {
   const fechar = () => useEstado.setState({ duplicados: null })
 
   const adicionarMesmoAssim = async () => {
-    await window.api.adicionarMesmoAssim(pedido.urls, pedido.opcoes, pedido.iniciar)
+    if (pedido.lote) await window.api.adicionarLote(pedido.lote, pedido.iniciar, true)
+    else await window.api.adicionarMesmoAssim(pedido.urls, pedido.opcoes, pedido.iniciar)
     fechar()
   }
 

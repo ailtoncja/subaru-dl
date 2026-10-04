@@ -91,6 +91,7 @@ const handlers: Handlers = {
     fila.adicionar(urls, opcoes, iniciar, true)
   },
   adicionarComInfo: async (url, info, opcoes, iniciar) => fila.adicionarComInfo(url, info, opcoes, iniciar),
+  adicionarLote: async (lote, iniciar, ignorar) => fila.adicionarLote(lote, iniciar, ignorar),
   remover: async (ids) => fila.remover(ids),
   iniciarFila: async () => fila.iniciarFila(),
   pausarTodos: async () => fila.pausarTodos(),

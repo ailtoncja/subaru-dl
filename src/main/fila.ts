@@ -2,7 +2,7 @@
 // pausa/retoma, tenta de novo quando falha e salva a fila em disco.
 import { execFile, type ChildProcess } from 'node:child_process'
 import { createInterface } from 'node:readline'
-import type { Duplicado, InfoMidia, ItemFila, MidiaBaixada, OpcoesDownload, Progresso, StatusItem } from '@shared/tipos'
+import type { Duplicado, InfoMidia, ItemFila, ItemLote, MidiaBaixada, OpcoesDownload, Progresso, StatusItem } from '@shared/tipos'
 import { gravadorAdiado, lerJson } from './armazenamento'
 import { configuracoes, obterSegredos } from './configuracoes'
 import { executar } from './ferramentas'
@@ -175,6 +175,35 @@ export function adicionarComInfo(url: string, info: InfoMidia, opcoes: Partial<O
   if (iniciar) prioritarios.add(novo.id)
   mudou(true)
   agendar()
+}
+
+/**
+ * Vários links, cada um com as suas opções (pasta, vídeos escolhidos da playlist…).
+ * Links já lidos na prévia entram prontos; os outros são lidos na fila.
+ * "Iniciar" liga a fila, respeitando o limite de downloads ao mesmo tempo.
+ */
+export function adicionarLote(lote: ItemLote[], iniciar: boolean, ignorarDuplicados = false): { adicionados: number; duplicados: Duplicado[] } {
+  const duplicados: Duplicado[] = []
+  const acao = configuracoes().acaoDuplicado
+  let lista = lote.filter((l) => /^https?:\/\/\S+$/i.test(l.url.trim()))
+  // Quem já viu a prévia sabe o que está baixando: só confere duplicados dos que não foram abertos
+  if (!ignorarDuplicados && acao !== 'permitir') {
+    const achados = procurarDuplicados(lista.filter((l) => !l.info).map((l) => l.url))
+    if (achados.size) {
+      lista = lista.filter((l) => !achados.has(l.url))
+      if (acao === 'perguntar') duplicados.push(...achados.values())
+      else logar('info', `${achados.size} link(s) já baixado(s) foram pulados`)
+    }
+  }
+  const novos = lista.map((l) =>
+    l.info ? { ...novoItem(l.url.trim(), l.opcoes), info: l.info, status: 'pronto' as const } : novoItem(l.url.trim(), l.opcoes)
+  )
+  itens.push(...novos)
+  if (iniciar && novos.length) filaRodando = true
+  mudou(true)
+  buscarProximasInfos()
+  agendar()
+  return { adicionados: novos.length, duplicados }
 }
 
 function buscarProximasInfos() {

@@ -141,6 +141,14 @@ export interface Progresso {
   itensTotal: number | null
 }
 
+/** Um link de uma lista (vários links de uma vez), com as suas próprias opções. */
+export interface ItemLote {
+  url: string
+  /** Informação já lida na prévia ("Ver"). null = ler na fila. */
+  info: InfoMidia | null
+  opcoes: Partial<OpcoesDownload>
+}
+
 /** O que o yt-dlp informa de cada arquivo terminado (vídeo por vídeo, mesmo em playlists). */
 export interface MidiaBaixada {
   idMidia: string
