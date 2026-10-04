@@ -2,10 +2,10 @@
 import { execFile, type ChildProcess } from 'node:child_process'
 import { join } from 'node:path'
 import { createInterface } from 'node:readline'
-import type { ItemGaleria, OrganizarGaleria } from '@shared/tipos'
+import type { ArquivoGaleria, ItemGaleria, OrganizarGaleria } from '@shared/tipos'
 import { gravadorAdiado, lerJson, pastaDados } from './armazenamento'
 import { configuracoes, obterSegredos } from './configuracoes'
-import { executar } from './ferramentas'
+import { executar, executarAteFim } from './ferramentas'
 import { dicaParaErro, logar } from './logs'
 
 let itens: ItemGaleria[] = []
@@ -49,6 +49,7 @@ export function carregarGaleria(): void {
     ...i,
     falhas: i.falhas ?? 0,
     organizar: i.organizar ?? 'padrao',
+    intervalo: i.intervalo ?? null,
     dicaErro: i.dicaErro ?? null,
     status: i.status === 'baixando' ? 'pausado' : i.status
   }))
@@ -61,7 +62,12 @@ export function salvarGaleriaAgora(): void {
 }
 
 /** Cada link pode ter a sua pasta e o seu jeito de organizar (padrão: os das configurações). */
-export function adicionarGaleria(urls: string[], pastaEscolhida?: string | null, organizarEscolhido?: OrganizarGaleria | null): number {
+export function adicionarGaleria(
+  urls: string[],
+  pastaEscolhida?: string | null,
+  organizarEscolhido?: OrganizarGaleria | null,
+  intervalo?: string | null
+): number {
   const pasta = pastaEscolhida || configuracoes().pastaGaleria
   const organizar = organizarEscolhido ?? configuracoes().galeriaOrganizar
   const novos: ItemGaleria[] = urls
@@ -73,6 +79,7 @@ export function adicionarGaleria(urls: string[], pastaEscolhida?: string | null,
       status: 'aguardando',
       pasta,
       organizar,
+      intervalo: intervalo?.trim() || null,
       arquivos: 0,
       ultimoArquivo: null,
       pulados: 0,
@@ -97,12 +104,11 @@ function agendar() {
   }
 }
 
-function argumentos(item: ItemGaleria): string[] {
+/** Cookies, login e proxy: os mesmos dos vídeos. */
+function argsAcesso(): string[] {
   const c = configuracoes()
   const s = obterSegredos()
-  const a = ['--no-colors', '-d', item.pasta]
-  // Padrão do gallery-dl: site/perfil/…; "plana" põe tudo direto na pasta escolhida
-  if (item.organizar === 'plana') a.push('-o', 'directory=[]')
+  const a: string[] = []
   if (c.cookies.origem === 'navegador' && c.cookies.navegador !== 'nenhum') {
     a.push('--cookies-from-browser', c.cookies.navegador + (c.cookies.perfil ? `:${c.cookies.perfil}` : ''))
   } else if (c.cookies.origem === 'arquivo' && c.cookies.arquivo) {
@@ -114,8 +120,17 @@ function argumentos(item: ItemGaleria): string[] {
     const login = c.proxy.usuario ? `${encodeURIComponent(c.proxy.usuario)}${s.senhaProxy ? ':' + encodeURIComponent(s.senhaProxy) : ''}@` : ''
     a.push('--proxy', `${c.proxy.tipo === 'socks5' ? 'socks5' : 'http'}://${login}${c.proxy.host}${c.proxy.porta ? ':' + c.proxy.porta : ''}`)
   }
+  return a
+}
+
+function argumentos(item: ItemGaleria): string[] {
+  const c = configuracoes()
+  const a = ['--no-colors', '-d', item.pasta, ...argsAcesso()]
+  // Padrão do gallery-dl: site/perfil/…; "plana" põe tudo direto na pasta escolhida
+  if (item.organizar === 'plana') a.push('-o', 'directory=[]')
   if (c.galeriaPularBaixados) a.push('--download-archive', join(pastaDados(), 'galeria-baixados.sqlite3'))
-  if (c.galeriaIntervalo.trim()) a.push('--range', c.galeriaIntervalo.trim())
+  const intervalo = item.intervalo ?? c.galeriaIntervalo.trim()
+  if (intervalo) a.push('--range', intervalo)
   if (c.galeriaPausa > 0) a.push('--sleep', String(c.galeriaPausa))
   a.push('--', item.url)
   return a
@@ -223,3 +238,42 @@ export function encerrarGaleria(): void {
   }
   salvarGaleriaAgora()
 }
+
+// ---------- Prévia: listar os arquivos sem baixar ----------
+
+/** Lista os arquivos de `inicio` em diante (posições do --range). `fim` = não há mais. */
+export async function listarArquivosGaleria(url: string, inicio: number, quantidade: number): Promise<{ arquivos: ArquivoGaleria[]; fim: boolean }> {
+  const args = ['--no-colors', '-J', '--range', `${inicio}-${inicio + quantidade - 1}`, ...argsAcesso(), '--', url]
+  logar('comando', `gallery-dl ${args.map((a, i) => (args[i - 1] === '-p' ? '••••' : /\s/.test(a) ? `"${a}"` : a)).join(' ')}`)
+  const { stdout, stderr, codigo } = await executarAteFim('gallery-dl.exe', args, 180_000)
+  const erro = stderr.split(/\r?\n/).filter((l) => /\[error\]/i.test(l)).pop()
+  let mensagens: unknown[] = []
+  try {
+    mensagens = JSON.parse(stdout || '[]')
+  } catch {
+    /* saída vazia ou cortada */
+  }
+  const arquivos: ArquivoGaleria[] = []
+  for (const m of mensagens) {
+    // Mensagem 3 = arquivo: [3, url, dados]
+    if (!Array.isArray(m) || m[0] !== 3) continue
+    const [, link, dados] = m as [number, string, Record<string, unknown>]
+    const ext = String(dados.extension ?? '').toLowerCase()
+    arquivos.push({
+      indice: inicio + arquivos.length,
+      url: link.replace(/^ytdl:/, ''),
+      nome: `${dados.filename ?? ''}${ext ? '.' + ext : ''}`,
+      ext,
+      largura: typeof dados.width === 'number' ? dados.width : null,
+      altura: typeof dados.height === 'number' ? dados.height : null,
+      video: link.startsWith('ytdl:') || /^(mp4|webm|mov|mkv|m4v)$/.test(ext)
+    })
+  }
+  if (!arquivos.length && (codigo !== 0 || erro)) {
+    const msg = erro?.replace(/^\[[^\]]+\]\[error\]\s*/i, '') ?? (codigo === 64 ? 'Site não suportado pelo gallery-dl' : `gallery-dl terminou com o código ${codigo}`)
+    logar('erro', msg)
+    throw new Error(msg)
+  }
+  return { arquivos, fim: arquivos.length < quantidade }
+}
+

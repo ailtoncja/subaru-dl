@@ -4,6 +4,7 @@ import {
   Camera,
   ClipboardPaste,
   Download,
+  FileText,
   FolderOpen,
   Hash,
   Headphones,
@@ -19,7 +20,7 @@ import {
   Video,
   X
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type DragEvent } from 'react'
 import { bytes, duracao, numeroCurto, tempoRelativo, velocidade } from '@shared/formatar'
 import { estimarTamanho, FORMATOS_AUDIO, BITRATES, QUALIDADES } from '@shared/formatos'
 import type { Duplicado, InfoMidia, OpcoesDownload } from '@shared/tipos'
@@ -44,19 +45,22 @@ export default function Inicio() {
   const [opcoes, setOpcoes] = useState<OpcoesDownload>(() => structuredClone(config!.padrao))
   const [avancado, setAvancado] = useState(false)
   const [verLista, setVerLista] = useState(false)
+  /** Vários links de uma vez (um por linha): mostra o cartão de lote em vez da prévia */
+  const [lote, setLote] = useState<string | null>(null)
+  const [arrastando, setArrastando] = useState(false)
 
   const ler = async (url: string) => {
     const links = extrairLinks(url)
     if (!links.length) return setErro('Cole um link que comece com http')
-    // Vários links de uma vez vão direto para a fila
+    // Vários links: cartão de lote, com as mesmas opções para todos
     if (links.length > 1) {
-      const n = await adicionarLinks(links)
-      if (n) {
-        avisar(`${n} links adicionados à fila`)
-        setTexto('')
-      }
+      setLote((atual) => [...new Set([...(atual ? extrairLinks(atual) : []), ...links])].join('\n'))
+      setPrevia(null)
+      setErro('')
+      setTexto('')
       return
     }
+    setLote(null)
     setTexto(links[0])
     setCarregando(true)
     setErro('')
@@ -89,6 +93,24 @@ export default function Inicio() {
 
   const mudar = (p: Partial<OpcoesDownload>) => setOpcoes((o) => ({ ...o, ...p }))
 
+  const importar = async () => {
+    const achados = (await window.api.lerArquivoLinks()).flatMap(extrairLinks)
+    if (achados.length) void ler(achados.join('\n'))
+  }
+
+  // Arrastar links ou um .txt com links para a janela
+  const soltar = async (e: DragEvent) => {
+    e.preventDefault()
+    setArrastando(false)
+    const achados: string[] = []
+    for (const arquivo of Array.from(e.dataTransfer.files)) {
+      if (/\.(txt|csv|list)$/i.test(arquivo.name)) achados.push(...extrairLinks(await arquivo.text()))
+    }
+    achados.push(...extrairLinks(e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain')))
+    if (achados.length) void ler(achados.join('\n'))
+    else avisar('Nada para adicionar no que foi solto', 'erro')
+  }
+
   const baixar = async (iniciar: boolean) => {
     if (!previa) return
     const pl = previa.info.playlist
@@ -103,13 +125,21 @@ export default function Inicio() {
   const naFila = fila.filter((i) => ['pronto', 'buscando', 'baixando', 'processando'].includes(i.status)).length
 
   return (
-    <div className="pagina">
+    <div
+      className="pagina"
+      onDragOver={(e) => {
+        e.preventDefault()
+        setArrastando(true)
+      }}
+      onDragLeave={(e) => e.currentTarget === e.target && setArrastando(false)}
+      onDrop={soltar}
+    >
       <div className="heroi">
         <h1>Baixe vídeos e áudios em alta qualidade</h1>
         <p>Cole o link do YouTube, TikTok, Instagram, Twitch ou de mais de 1.800 sites.</p>
       </div>
 
-      <div className="cartao caixa-url">
+      <div className="cartao caixa-url" style={arrastando ? { borderColor: 'var(--amarelo)' } : undefined}>
         <div className="linha-url">
           <Link2 />
           <input
@@ -124,13 +154,16 @@ export default function Inicio() {
                 void ler(colado)
               }
             }}
-            placeholder="https://www.youtube.com/watch?v=…"
+            placeholder="Cole um link (ou vários, um por linha)"
           />
           {texto && !carregando && (
             <button className="icone-btn leve" title="Limpar" onClick={() => (setTexto(''), setPrevia(null), setErro(''))}>
               <X />
             </button>
           )}
+          <button className="icone-btn leve" title="Importar uma lista de links (.txt)" onClick={importar}>
+            <FileText />
+          </button>
           <button className="btn" onClick={colar}>
             <ClipboardPaste className="amarelo" /> Colar <span className="kbd">Ctrl+V</span>
           </button>
@@ -236,6 +269,8 @@ export default function Inicio() {
           </button>
         </div>
       )}
+
+      {lote !== null && !carregando && <CartaoLote texto={lote} setTexto={setLote} fechar={() => setLote(null)} />}
 
       {avancado && previa && (
         <OpcoesAvancadas titulo="Opções avançadas" info={previa.info} opcoes={opcoes} mudar={mudar} aoFechar={() => setAvancado(false)} />
@@ -409,6 +444,114 @@ function CartaoPrevia({
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+/** Vários links de uma vez, com as mesmas opções para todos (antiga página Playlists & Lote). */
+function CartaoLote({ texto, setTexto, fechar }: { texto: string; setTexto: (t: string) => void; fechar: () => void }) {
+  const config = useEstado((s) => s.config)!
+  // Em lote, organizar por playlist costuma ser o mais útil
+  const [o, setO] = useState<OpcoesDownload>(() => ({
+    ...structuredClone(config.padrao),
+    subpasta: config.padrao.subpasta === 'nenhuma' ? 'playlist' : config.padrao.subpasta
+  }))
+  const [avancado, setAvancado] = useState(false)
+  const mudar = (p: Partial<OpcoesDownload>) => setO((atual) => ({ ...atual, ...p }))
+  const links = [...new Set(extrairLinks(texto))]
+
+  const enviar = async (iniciar: boolean) => {
+    if (!links.length) return avisar('Nenhum link na lista', 'erro')
+    const n = await adicionarLinks(links, iniciar, o)
+    if (n) {
+      avisar(`${n} link(s) na fila`)
+      fechar()
+      useEstado.getState().ir('downloads')
+    }
+  }
+
+  return (
+    <div className="cartao recheado" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div className="flex">
+        <ListVideo className="amarelo" width={19} />
+        <strong className="flex-1">
+          {links.length} links <span className="muted pequeno">· vídeos, playlists ou canais, com as mesmas opções para todos</span>
+        </strong>
+        <button className="icone-btn leve" title="Fechar" onClick={fechar}>
+          <X />
+        </button>
+      </div>
+      <textarea className="mono" style={{ minHeight: 120 }} value={texto} onChange={(e) => setTexto(e.target.value)} />
+
+      <div className="previa" style={{ display: 'block', padding: 0 }}>
+        <div className="opcoes">
+          <div className="segmentado">
+            <button className={o.modo === 'video' ? 'ativo' : ''} onClick={() => mudar({ modo: 'video' })}>
+              <Video /> Vídeo
+            </button>
+            <button className={o.modo === 'audio' ? 'ativo' : ''} onClick={() => mudar({ modo: 'audio' })}>
+              <Music /> Áudio
+            </button>
+          </div>
+          {o.modo === 'video' ? (
+            <>
+              <select value={o.qualidade} onChange={(e) => mudar({ qualidade: e.target.value as OpcoesDownload['qualidade'] })}>
+                {QUALIDADES.map((q) => (
+                  <option key={q.valor} value={q.valor}>
+                    {q.nome}
+                  </option>
+                ))}
+              </select>
+              <select value={o.container} onChange={(e) => mudar({ container: e.target.value as OpcoesDownload['container'] })}>
+                <option value="mp4">MP4</option>
+                <option value="mkv">MKV</option>
+                <option value="webm">WebM</option>
+              </select>
+            </>
+          ) : (
+            <>
+              <select value={o.bitrateAudio} onChange={(e) => mudar({ bitrateAudio: Number(e.target.value) })}>
+                {BITRATES.map((b) => (
+                  <option key={b} value={b}>
+                    {b ? `${b} kbps` : 'Melhor qualidade'}
+                  </option>
+                ))}
+              </select>
+              <select value={o.formatoAudio} onChange={(e) => mudar({ formatoAudio: e.target.value as OpcoesDownload['formatoAudio'] })}>
+                {FORMATOS_AUDIO.map((f) => (
+                  <option key={f.valor} value={f.valor}>
+                    {f.nome}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
+        </div>
+        <div className="rodape-previa" style={{ marginTop: 14 }}>
+          <CampoPasta pasta={o.pasta} modo={o.modo} aoMudar={(pasta) => mudar({ pasta })} />
+          <SelecaoOrganizar o={o} mudar={mudar} compacto />
+          {o.modo === 'video' && (
+            <label>
+              <input type="checkbox" checked={o.legendas.ativas} onChange={(e) => mudar({ legendas: { ...o.legendas, ativas: e.target.checked } })} />
+              Legendas {(config.padrao.legendas.idiomas[0] ?? 'pt').toUpperCase()}
+            </label>
+          )}
+          <button className="link-amarelo mono pequeno" onClick={() => setAvancado(true)}>
+            <SlidersHorizontal /> Opções avançadas
+          </button>
+        </div>
+      </div>
+
+      <div className="flex" style={{ justifyContent: 'flex-end' }}>
+        <button className="btn" disabled={!links.length} onClick={() => enviar(false)}>
+          <ListPlus /> Adicionar à fila
+        </button>
+        <button className="btn primario grande" disabled={!links.length} onClick={() => enviar(true)}>
+          <Download /> Baixar tudo
+        </button>
+      </div>
+
+      {avancado && <OpcoesAvancadas titulo="Opções avançadas (para todos)" info={null} opcoes={o} mudar={mudar} aoFechar={() => setAvancado(false)} />}
     </div>
   )
 }

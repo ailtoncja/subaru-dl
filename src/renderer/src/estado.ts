@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { Configuracoes, Duplicado, EntradaHistorico, EntradaLog, EstadoFerramenta, ItemFila, ItemGaleria, OpcoesDownload } from '@shared/tipos'
 
-export type Pagina = 'inicio' | 'downloads' | 'playlists' | 'galeria' | 'logs' | 'dependencias' | 'configuracoes'
+export type Pagina = 'inicio' | 'downloads' | 'galeria' | 'logs' | 'dependencias' | 'configuracoes'
 
 export interface Toast {
   id: number

@@ -108,7 +108,8 @@ const handlers: Handlers = {
   limparHistorico: async () => historico.limparHistorico(),
 
   obterGaleria: async () => galeria.listarGaleria(),
-  adicionarGaleria: async (urls, pasta, organizar) => galeria.adicionarGaleria(urls, pasta, organizar),
+  adicionarGaleria: async (urls, pasta, organizar, intervalo) => galeria.adicionarGaleria(urls, pasta, organizar, intervalo),
+  listarArquivosGaleria: async (url, inicio, quantidade) => galeria.listarArquivosGaleria(url, inicio, quantidade),
   pausarGaleria: async (id) => galeria.pausarGaleria(id),
   retomarGaleria: async (id) => galeria.retomarGaleria(id),
   removerGaleria: async (ids) => galeria.removerGaleria(ids),
