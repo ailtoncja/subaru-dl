@@ -21,7 +21,7 @@ import {
   X
 } from 'lucide-react'
 import { useEffect, useMemo, useState, type DragEvent } from 'react'
-import { bytes, duracao, numeroCurto, tempoRelativo, velocidade } from '@shared/formatar'
+import { bytes, duracao, faixasParaEscolher, numeroCurto, tempoRelativo, velocidade } from '@shared/formatar'
 import { estimarTamanho, FORMATOS_AUDIO, BITRATES, QUALIDADES } from '@shared/formatos'
 import type { Duplicado, InfoMidia, ItemLote, OpcoesDownload } from '@shared/tipos'
 import { CampoLinks } from '../componentes/CampoLinks'
@@ -418,6 +418,20 @@ function CartaoPrevia({
                 ))}
               </select>
             </>
+          )}
+          {info.idiomasAudio.length > 1 && (
+            <select
+              className="faixa-audio"
+              title="Faixa de áudio (a original é a padrão)"
+              value={o.idiomaAudio ?? ''}
+              onChange={(e) => mudar({ idiomaAudio: e.target.value || null })}
+            >
+              {faixasParaEscolher(info.idiomasAudio, info.idiomaOriginal).map((f) => (
+                <option key={f.valor} value={f.valor}>
+                  Áudio: {f.nome}
+                </option>
+              ))}
+            </select>
           )}
         </div>
 

@@ -266,6 +266,7 @@ input[type='checkbox'] { width: 17px; height: 17px; accent-color: var(--azul); c
 .previa .canal { margin-top: -6px; color: var(--muted); }
 .previa .opcoes { display: grid; grid-template-columns: auto minmax(0, 1fr) 100px; gap: 10px; align-items: stretch; }
 .previa .opcoes select { min-width: 0; font-size: 14.5px; }
+.previa .opcoes select.faixa-audio { grid-column: 1 / -1; }
 .previa .acoes-previa { display: flex; justify-content: flex-end; gap: 10px; }
 .previa hr { width: 100%; margin: 2px 0; border: 0; border-top: 1px solid var(--borda); }
 .previa .rodape-previa { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; font: 12.5px var(--mono); color: var(--muted); }

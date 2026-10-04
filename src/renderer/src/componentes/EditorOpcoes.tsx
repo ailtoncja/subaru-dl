@@ -1,7 +1,7 @@
 // Editores das opções de download, usados nos padrões (Configurações) e nas preferências de cada item.
 import { Music, Video } from 'lucide-react'
 import { BITRATES, FORMATOS_AUDIO, QUALIDADES } from '@shared/formatos'
-import { nomeIdioma } from '@shared/formatar'
+import { faixasParaEscolher, nomeIdioma } from '@shared/formatar'
 import type { InfoMidia, OpcoesDownload } from '@shared/tipos'
 import { Chips, Etiquetas, Linha, LinhaInterruptor, Segmentado, Selecao } from './ui'
 
@@ -100,11 +100,11 @@ export function EditorQualidade({ o, mudar, info }: { o: OpcoesDownload; mudar: 
         </>
       )}
       {(idiomas.length > 1 || !info) && (
-        <Linha rotulo="Faixa de áudio" dica={info ? 'Vídeos dublados têm mais de uma faixa' : 'Código do idioma (ex.: pt, en). Vazio = padrão do vídeo'}>
+        <Linha rotulo="Faixa de áudio" dica={info ? 'A faixa original é a padrão; as outras são dublagens' : 'Código do idioma (ex.: pt, en). Vazio = a faixa original do vídeo'}>
           {info ? (
             <Selecao
               valor={o.idiomaAudio ?? ''}
-              opcoes={[{ valor: '', nome: 'Padrão do vídeo' }, ...idiomas.map((i) => ({ valor: i, nome: nomeIdioma(i) }))]}
+              opcoes={faixasParaEscolher(idiomas, info.idiomaOriginal)}
               aoMudar={(v) => mudar({ idiomaAudio: v || null })}
               largura={240}
             />

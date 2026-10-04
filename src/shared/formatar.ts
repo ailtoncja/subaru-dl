@@ -71,6 +71,19 @@ const NOMES_IDIOMA: Record<string, string> = {
   id: 'Indonésio', th: 'Tailandês', vi: 'Vietnamita', uk: 'Ucraniano', sv: 'Sueco'
 }
 
+/** "Inglês · en" → rótulo de uma faixa de áudio: a original se destaca, as outras são dublagens. */
+export function rotuloFaixa(codigo: string, original: string | null | undefined): string {
+  const nome = (c: string) => nomeIdioma(c).split(' · ')[0]
+  if (codigo === '') return original ? `${nome(original)} · original (padrão)` : 'Padrão do vídeo'
+  return `${nome(codigo)}${codigo === original ? ' · original' : ' · dublagem'}`
+}
+
+/** Faixas para escolher: a original primeiro (valor vazio = padrão), depois as dublagens em ordem alfabética. */
+export function faixasParaEscolher(idiomas: string[], original: string | null | undefined): Array<{ valor: string; nome: string }> {
+  const outras = idiomas.filter((i) => i !== original).sort((a, b) => nomeIdioma(a).localeCompare(nomeIdioma(b), 'pt-BR'))
+  return [{ valor: '', nome: rotuloFaixa('', original) }, ...outras.map((i) => ({ valor: i, nome: rotuloFaixa(i, original) }))]
+}
+
 export function nomeIdioma(codigo: string): string {
   const base = codigo.replace(/-orig$/, '')
   const nome = NOMES_IDIOMA[base] ?? NOMES_IDIOMA[base.split('-')[0]]
