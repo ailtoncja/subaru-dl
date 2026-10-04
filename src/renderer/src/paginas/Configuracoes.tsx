@@ -699,6 +699,107 @@ export default function Configuracoes() {
       ]
     },
     {
+      id: 'biblioteca',
+      titulo: 'Biblioteca',
+      itens: [
+        {
+          texto: 'biblioteca excluir apagar arquivo lixeira',
+          el: (
+            <Linha rotulo="Ao excluir da biblioteca" dica="Arquivos apagados vão para a Lixeira">
+              <Selecao
+                valor={c.excluirArquivo}
+                aoMudar={(excluirArquivo) => salvarConfig({ excluirArquivo })}
+                largura={230}
+                opcoes={[
+                  { valor: 'perguntar', nome: 'Perguntar sempre' },
+                  { valor: 'sempre', nome: 'Apagar o arquivo também' },
+                  { valor: 'nunca', nome: 'Só tirar da biblioteca' }
+                ]}
+              />
+            </Linha>
+          )
+        },
+        {
+          texto: 'coleções automáticas playlist',
+          el: (
+            <LinhaInterruptor
+              rotulo="Criar coleções para playlists"
+              dica="Cada playlist baixada vira uma coleção na biblioteca"
+              ligado={c.colecoesAutomaticas}
+              aoMudar={(colecoesAutomaticas) => salvarConfig({ colecoesAutomaticas })}
+            />
+          )
+        }
+      ]
+    },
+    {
+      id: 'galeria',
+      titulo: 'Galeria',
+      itens: [
+        {
+          texto: 'galeria pasta imagens gallery-dl',
+          el: (
+            <Linha rotulo="Pasta da galeria" dica={c.pastaGaleria}>
+              <button
+                className="btn pequeno"
+                onClick={async () => {
+                  const p = await window.api.escolherPasta(c.pastaGaleria)
+                  if (p) void salvarConfig({ pastaGaleria: p })
+                }}
+              >
+                <FolderOpen /> Escolher…
+              </button>
+            </Linha>
+          )
+        },
+        {
+          texto: 'galeria simultâneos ao mesmo tempo',
+          el: (
+            <Linha rotulo="Galerias ao mesmo tempo">
+              <Selecao
+                valor={c.galeriaSimultaneos}
+                aoMudar={(galeriaSimultaneos) => salvarConfig({ galeriaSimultaneos })}
+                opcoes={[1, 2, 3, 4].map((n) => ({ valor: n, nome: String(n) }))}
+                largura={80}
+              />
+            </Linha>
+          )
+        },
+        {
+          texto: 'galeria pular já baixados arquivo histórico',
+          el: (
+            <LinhaInterruptor
+              rotulo="Pular o que já foi baixado"
+              dica="Lembra cada arquivo baixado e não baixa de novo, mesmo se você apagar"
+              ligado={c.galeriaPularBaixados}
+              aoMudar={(galeriaPularBaixados) => salvarConfig({ galeriaPularBaixados })}
+            />
+          )
+        },
+        {
+          texto: 'galeria pausa espera entre arquivos bloqueio instagram',
+          el: (
+            <Linha rotulo="Pausa entre arquivos" dica="Alguns sites (ex.: Instagram) bloqueiam quem baixa rápido demais">
+              <Selecao
+                valor={c.galeriaPausa}
+                aoMudar={(galeriaPausa) => salvarConfig({ galeriaPausa })}
+                opcoes={[0, 1, 2, 5, 10].map((n) => ({ valor: n, nome: n ? `${n} s` : 'Nenhuma' }))}
+                largura={110}
+              />
+            </Linha>
+          )
+        },
+        {
+          texto: 'galeria intervalo quantidade arquivos range',
+          el: (
+            <Linha rotulo="Quais arquivos baixar" dica='Ex.: "1-50" para os 50 primeiros. Vazio = todos'>
+              <CampoTexto largura={120} placeholder="todos" valor={c.galeriaIntervalo} aoSalvar={(galeriaIntervalo) => salvarConfig({ galeriaIntervalo })} />
+            </Linha>
+          )
+        }
+      ]
+    },
+    {
       id: 'sistema',
       titulo: 'Sistema',
       itens: [

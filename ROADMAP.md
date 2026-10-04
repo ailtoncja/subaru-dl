@@ -105,24 +105,24 @@ Legenda: `[ ]` a fazer · `[x]` pronto
 
 ---
 
-## Fase 2 — Biblioteca e dados
+## Fase 2 — Biblioteca e dados ✅
 
 ### L. Biblioteca
-- [ ] 66. Biblioteca com busca, ordenação e filtros
-- [ ] 67. Tags e coleções
-- [ ] 68. Baixar de novo, renomear, excluir (opção de apagar o arquivo)
-- [ ] 69. Avisar quando o arquivo sumiu
-- [ ] 70. Dividir arquivo em partes a cada X minutos
+- [x] 66. Biblioteca com busca, ordenação e filtros
+- [x] 67. Tags e coleções
+- [x] 68. Baixar de novo, renomear, excluir (opção de apagar o arquivo)
+- [x] 69. Avisar quando o arquivo sumiu
+- [x] 70. Dividir arquivo em partes a cada X minutos
 
 ### M. Dados
-- [ ] 72. Baixar só informações (JSON, descrição, comentários, miniatura, legendas)
-- [ ] 73. Exportar lista de playlist/canal (CSV, Excel, JSON, Markdown…)
-- [ ] 75. Ver detalhes do vídeo (views, likes, capítulos, descrição)
+- [x] 72. Baixar só informações (JSON, descrição, comentários, miniatura, legendas)
+- [x] 73. Exportar lista de playlist/canal (CSV, Excel, JSON, Markdown…)
+- [x] 75. Ver detalhes do vídeo (views, likes, capítulos, descrição)
 
 ---
 
-## Fase 3 — Galeria
-- [ ] 74. Galeria de imagens com gallery-dl (Instagram, Twitter, artistas, mangás)
+## Fase 3 — Galeria ✅
+- [x] 74. Galeria de imagens com gallery-dl (Instagram, Twitter, artistas, mangás)
 
 ---
 

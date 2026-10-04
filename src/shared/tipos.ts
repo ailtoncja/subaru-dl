@@ -60,6 +60,18 @@ export interface OpcoesDownload {
 
   /** Pasta sobrescrita só para este item. null = usa a das configurações. */
   pasta: string | null
+
+  /** Baixar só as informações, sem o vídeo (item 72). null = download normal. */
+  somenteInfo: OpcoesInfo | null
+}
+
+export interface OpcoesInfo {
+  json: boolean
+  descricao: boolean
+  comentarios: boolean
+  miniatura: boolean
+  legendas: boolean
+  idiomasLegenda: string[]
 }
 
 export type StatusItem =
@@ -138,6 +150,26 @@ export interface Progresso {
   itensTotal: number | null
 }
 
+/** O que o yt-dlp informa de cada arquivo terminado (vídeo por vídeo, mesmo em playlists). */
+export interface MidiaBaixada {
+  idMidia: string
+  titulo: string
+  canal: string | null
+  site: string
+  url: string
+  duracao: number | null
+  altura: number | null
+  fps: number | null
+  abr: number | null
+  ext: string
+  arquivo: string
+  miniatura: string | null
+  dataUpload: string | null
+  playlist: string | null
+  views: number | null
+  likes: number | null
+}
+
 export interface ItemFila {
   id: string
   url: string
@@ -146,6 +178,7 @@ export interface ItemFila {
   opcoes: OpcoesDownload
   progresso: Progresso
   arquivos: string[]
+  midias: MidiaBaixada[]
   erro: string | null
   dicaErro: string | null
   tentativa: number
@@ -226,6 +259,18 @@ export interface Configuracoes {
   canalYtdlp: CanalAtualizacao
   atualizarApp: boolean
   guiaVisto: boolean
+
+  // Biblioteca
+  excluirArquivo: AcaoExcluir
+  colecoesAutomaticas: boolean
+
+  // Galeria
+  pastaGaleria: string
+  galeriaSimultaneos: number
+  galeriaPularBaixados: boolean
+  galeriaIntervalo: string
+  /** Segundos de pausa entre um arquivo e outro (evita bloqueio em alguns sites) */
+  galeriaPausa: number
 }
 
 /** Dados sensíveis, guardados criptografados com o cofre do Windows (DPAPI). */
@@ -238,13 +283,87 @@ export interface Segredos {
   senhaProxy: string
 }
 
-export interface EntradaHistorico {
+/** Um download na biblioteca (categoria L). */
+export interface ItemBiblioteca {
+  id: string
   idMidia: string
   site: string
   url: string
   titulo: string
+  canal: string | null
+  duracao: number | null
+  miniatura: string | null
+  dataUpload: string | null
+  views: number | null
+  likes: number | null
+  modo: Modo
+  /** Extensão do arquivo (mp4, mp3…) */
+  formato: string
+  /** "1080p", "320k"… */
+  qualidade: string | null
   arquivos: string[]
+  tamanho: number
   baixadoEm: number
+  playlist: string | null
+  tags: string[]
+  colecoes: string[]
+  /** Preenchido ao listar: o arquivo ainda existe no disco? (item 69) */
+  arquivoExiste?: boolean
+}
+
+export interface Colecao {
+  id: string
+  nome: string
+  criadaEm: number
+}
+
+export interface Biblioteca {
+  itens: ItemBiblioteca[]
+  colecoes: Colecao[]
+}
+
+export type AcaoExcluir = 'perguntar' | 'sempre' | 'nunca'
+
+// ---------- Exportação de dados (item 73) ----------
+
+export type FonteDados = 'auto' | 'playlist' | 'canal' | 'busca' | 'links'
+export type FormatoExportacao = 'csv' | 'xlsx' | 'json' | 'md' | 'html' | 'txt'
+
+export interface LinhaDados {
+  id: string
+  url: string
+  titulo: string
+  canal: string | null
+  site: string
+  duracao: number | null
+  dataUpload: string | null
+  views: number | null
+  likes: number | null
+  comentarios: number | null
+  descricao: string | null
+  tags: string[]
+  miniatura: string | null
+}
+
+export type CampoDados = 'titulo' | 'url' | 'canal' | 'site' | 'duracao' | 'duracaoSegundos' | 'dataUpload' | 'views' | 'likes' | 'comentarios' | 'descricao' | 'tags' | 'miniatura' | 'id'
+
+// ---------- Galeria (item 74) ----------
+
+export type StatusGaleria = 'aguardando' | 'baixando' | 'pausado' | 'concluido' | 'erro'
+
+export interface ItemGaleria {
+  id: string
+  url: string
+  status: StatusGaleria
+  pasta: string
+  arquivos: number
+  ultimoArquivo: string | null
+  pulados: number
+  falhas: number
+  dicaErro: string | null
+  erro: string | null
+  criadoEm: number
+  concluidoEm: number | null
 }
 
 export interface Duplicado {
