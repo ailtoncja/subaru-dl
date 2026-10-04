@@ -84,9 +84,20 @@ export function faixasParaEscolher(idiomas: string[], original: string | null | 
   return [{ valor: '', nome: rotuloFaixa('', original) }, ...outras.map((i) => ({ valor: i, nome: rotuloFaixa(i, original) }))]
 }
 
+let nomesIntl: Intl.DisplayNames | null | undefined
+function nomeIntl(codigo: string): string | undefined {
+  try {
+    nomesIntl ??= new Intl.DisplayNames(['pt-BR'], { type: 'language' })
+    const n = nomesIntl.of(codigo)
+    return n && n !== codigo ? n[0].toUpperCase() + n.slice(1) : undefined
+  } catch {
+    return undefined
+  }
+}
+
 export function nomeIdioma(codigo: string): string {
   const base = codigo.replace(/-orig$/, '')
-  const nome = NOMES_IDIOMA[base] ?? NOMES_IDIOMA[base.split('-')[0]]
+  const nome = NOMES_IDIOMA[base] ?? NOMES_IDIOMA[base.split('-')[0]] ?? nomeIntl(base)
   const original = codigo.endsWith('-orig') ? ' (original)' : ''
   return nome ? `${nome}${original} · ${base}` : codigo
 }

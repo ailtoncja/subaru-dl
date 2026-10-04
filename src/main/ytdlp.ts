@@ -411,7 +411,7 @@ function lerInfo(d: any): InfoMidia {
     aoVivo: d.is_live === true || d.live_status === 'is_live',
     formatos,
     legendas: Object.keys(d.subtitles ?? {}).filter((k) => k !== 'live_chat'),
-    legendasAuto: Object.keys(d.automatic_captions ?? {}).filter((k) => !k.includes('-') || k.endsWith('-orig')),
+    legendasAuto: Object.keys(d.automatic_captions ?? {}).filter((k) => k.endsWith('-orig') || !/-[a-z]{2,3}$/.test(k)),
     idiomasAudio,
     idiomaOriginal,
     capitulos,
