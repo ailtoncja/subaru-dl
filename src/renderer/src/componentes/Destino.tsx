@@ -79,6 +79,7 @@ export function SelecaoOrganizar({ o, mudar, compacto }: { o: OpcoesDownload; mu
 export const OPCOES_ORGANIZAR_GALERIA: Array<{ valor: OrganizarGaleria; nome: string }> = [
   { valor: 'plana', nome: 'Sem subpastas' },
   { valor: 'site', nome: 'Por site' },
+  { valor: 'perfil', nome: 'Só o perfil' },
   { valor: 'padrao', nome: 'Por site → perfil' },
   { valor: 'personalizado', nome: 'Personalizado…' }
 ]

@@ -3,9 +3,10 @@
 // Uso: node scripts/cdp.mjs eval "<expressão JS>"
 //      node scripts/cdp.mjs foto caminho.png
 //      node scripts/cdp.mjs frente   (traz a janela para frente)
+//      node scripts/cdp.mjs cdp <Método> '<json>'   (qualquer comando do protocolo, ex.: Input.insertText)
 import { writeFileSync } from 'node:fs'
 
-const [, , comando, arg] = process.argv
+const [, , comando, arg, arg2] = process.argv
 const alvos = await (await fetch('http://127.0.0.1:9222/json')).json()
 const pagina = alvos.find((a) => a.type === 'page' && !a.url.startsWith('devtools'))
 if (!pagina) throw new Error('Janela do app não encontrada')
@@ -35,6 +36,8 @@ if (comando === 'eval') {
 } else if (comando === 'frente') {
   await enviar('Page.bringToFront')
   console.log('janela na frente')
+} else if (comando === 'cdp') {
+  console.log(JSON.stringify((await enviar(arg, arg2 ? JSON.parse(arg2) : {})).result ?? null))
 } else if (comando === 'foto') {
   const r = await enviar('Page.captureScreenshot', { format: 'png' })
   writeFileSync(arg, Buffer.from(r.result.data, 'base64'))
