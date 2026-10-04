@@ -296,12 +296,25 @@ export type StatusGaleria = 'aguardando' | 'baixando' | 'pausado' | 'concluido' 
 
 export type OrganizarGaleria = 'padrao' | 'plana'
 
+/** Um arquivo listado na prévia da galeria. `indice` é a posição usada pelo --range do gallery-dl. */
+export interface ArquivoGaleria {
+  indice: number
+  url: string
+  nome: string
+  ext: string
+  largura: number | null
+  altura: number | null
+  video: boolean
+}
+
 export interface ItemGaleria {
   id: string
   url: string
   status: StatusGaleria
   pasta: string
   organizar: OrganizarGaleria
+  /** Quais arquivos baixar (ex.: "1-3,7"), escolhidos na prévia. null = todos (ou o das configurações) */
+  intervalo: string | null
   arquivos: number
   ultimoArquivo: string | null
   pulados: number

@@ -7,7 +7,6 @@ import {
   Gauge,
   History,
   Images,
-  ListVideo,
   Minus,
   Package,
   ScrollText,
@@ -26,12 +25,10 @@ import Downloads from './paginas/Downloads'
 import Galeria from './paginas/Galeria'
 import Inicio from './paginas/Inicio'
 import Logs from './paginas/Logs'
-import Playlists from './paginas/Playlists'
 
 const PAGINAS: Array<{ id: Pagina; nome: string; icone: typeof Download }> = [
   { id: 'inicio', nome: 'Início', icone: Download },
   { id: 'downloads', nome: 'Downloads', icone: History },
-  { id: 'playlists', nome: 'Playlists & Lote', icone: ListVideo },
   { id: 'galeria', nome: 'Galeria', icone: Images },
   { id: 'logs', nome: 'Logs', icone: ScrollText },
   { id: 'dependencias', nome: 'Dependências', icone: Package },
@@ -127,7 +124,6 @@ export default function App() {
         <main className="conteudo">
           {pagina === 'inicio' && <Inicio />}
           {pagina === 'downloads' && <Downloads />}
-          {pagina === 'playlists' && <Playlists />}
           {pagina === 'galeria' && <Galeria />}
           {pagina === 'logs' && <Logs />}
           {pagina === 'dependencias' && <Dependencias />}
