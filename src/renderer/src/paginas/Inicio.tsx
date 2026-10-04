@@ -51,6 +51,16 @@ export default function Inicio() {
   const [lote, setLote] = useState<LinhaVideo[] | null>(null)
   const [arrastando, setArrastando] = useState(false)
 
+  /** Shift+Enter: o link vai para a lista na hora e o campo fica livre para o próximo. */
+  const acrescentarAoLote = () => {
+    const links = extrairLinks(texto)
+    if (!links.length) return
+    setLote((atual) => juntarLinks(atual ?? [], links, novaLinhaVideo))
+    setPrevia(null)
+    setErro('')
+    setTexto('')
+  }
+
   const ler = async (url: string) => {
     const links = extrairLinks(url)
     if (!links.length) return setErro('Cole um link que comece com http')
@@ -150,6 +160,7 @@ export default function Inicio() {
             autoFocus
             aoMudar={setTexto}
             aoEnviar={() => ler(texto)}
+            aoAcrescentar={acrescentarAoLote}
             aoColar={(e) => {
               // Campo vazio: colar já abre o link. Já tem link (Shift+Enter): só acrescenta a linha.
               const colado = e.clipboardData.getData('text')
@@ -158,7 +169,7 @@ export default function Inicio() {
                 void ler(colado)
               }
             }}
-            placeholder="Cole um link (Shift+Enter para colocar outro)"
+            placeholder="Cole um link (Shift+Enter para adicionar à lista)"
           />
           {texto && !carregando && (
             <button className="icone-btn leve" title="Limpar" onClick={() => (setTexto(''), setPrevia(null), setErro(''))}>
