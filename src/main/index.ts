@@ -1,17 +1,17 @@
-import { app, BrowserWindow, clipboard, dialog, ipcMain, net, protocol, shell } from 'electron'
+import { app, BrowserWindow, clipboard, dialog, ipcMain, protocol, shell } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { pathToFileURL } from 'node:url'
 import type { ApiSubaru } from '@shared/api'
 import { EVENTOS } from '@shared/api'
-import { ESQUEMA_MINIATURA, EXTENSOES_IMAGEM } from '@shared/miniatura'
+import { ESQUEMA_MINIATURA } from '@shared/miniatura'
 import * as cfg from './configuracoes'
 import * as galeria from './galeria'
 import * as ferramentas from './ferramentas'
 import * as fila from './fila'
 import * as historico from './historico'
 import * as logs from './logs'
+import { limparCacheAntigo, servirMiniatura } from './miniaturas'
 import * as sistema from './sistema'
 import { buscarInfo } from './ytdlp'
 
@@ -277,12 +277,9 @@ function aplicarConfiguracoesDeSistema() {
 }
 
 app.whenReady().then(() => {
-  // Só entrega arquivos de imagem que existem: nada além disso sai do disco por aqui
-  protocol.handle(ESQUEMA_MINIATURA, async (req) => {
-    const caminho = new URL(req.url).searchParams.get('c') ?? ''
-    if (!EXTENSOES_IMAGEM.test(caminho) || !existsSync(caminho)) return new Response(null, { status: 404 })
-    return net.fetch(pathToFileURL(caminho).toString())
-  })
+  // Miniaturas reduzidas e em cache; do disco, só imagens saem por aqui
+  protocol.handle(ESQUEMA_MINIATURA, servirMiniatura)
+  limparCacheAntigo()
 
   app.setAppUserModelId('local.subaru.dl')
   ferramentas.prepararFerramentas()
