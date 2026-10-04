@@ -129,18 +129,25 @@ function argsAcesso(): string[] {
   return a
 }
 
+/**
+ * Uma pasta com o nome do perfil. Cada site chama o perfil por um campo diferente
+ * (Instagram: username, X: user[name], Pixiv: user[account], Bluesky: author[handle]…);
+ * o gallery-dl usa o primeiro que existir e, se nenhum existir, o nome do site.
+ */
+const PASTA_PERFIL =
+  '{username|user[account]|user[name]|author[handle]|author[name]|owner[username]|blog_name|blog[name]|subreddit|uploader|search_tags|category}'
+
 function argumentos(item: ItemGaleria): string[] {
   const c = configuracoes()
   const a = ['--no-colors', '-d', item.pasta, ...argsAcesso()]
   // Padrão do gallery-dl: site/perfil/…; os outros trocam a lista de subpastas
-  const subpastas =
-    item.organizar === 'plana'
-      ? []
-      : item.organizar === 'site'
-        ? ['{category}']
-        : item.organizar === 'personalizado'
-          ? item.formatoPasta.split(/[\\/]+/).map((p) => p.trim()).filter(Boolean)
-          : null
+  const subpastas = {
+    plana: [],
+    site: ['{category}'],
+    perfil: [PASTA_PERFIL],
+    padrao: null,
+    personalizado: item.formatoPasta.split(/[\\/]+/).map((p) => p.trim()).filter(Boolean)
+  }[item.organizar]
   if (subpastas) a.push('-o', `directory=${JSON.stringify(subpastas)}`)
   if (c.galeriaPularBaixados) a.push('--download-archive', join(pastaDados(), 'galeria-baixados.sqlite3'))
   const intervalo = item.intervalo ?? c.galeriaIntervalo.trim()

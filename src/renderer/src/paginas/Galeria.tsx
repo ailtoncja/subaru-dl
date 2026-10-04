@@ -25,6 +25,7 @@ import { memo, useCallback, useEffect, useRef, useState, type DragEvent } from '
 import { tempoRelativo } from '@shared/formatar'
 import { urlArquivoLocal, urlMiniaturaRemota } from '@shared/miniatura'
 import type { ArquivoGaleria, ItemGaleria, OrganizarGaleria, StatusGaleria } from '@shared/tipos'
+import { CampoLinks } from '../componentes/CampoLinks'
 import { pastaCurta, SelecaoOrganizarGaleria } from '../componentes/Destino'
 import { juntarLinks, ListaLinks, type LinhaLink } from '../componentes/ListaLinks'
 import { compactar } from '../componentes/OpcoesAvancadas'
@@ -86,12 +87,14 @@ export default function Galeria() {
   const [previa, setPrevia] = useState<Listagem | null>(null)
   const [linhas, setLinhas] = useState<LinhaGaleria[] | null>(null)
   const [arrastando, setArrastando] = useState(false)
-  const link = extrairLinks(texto)[0] ?? ''
+  // Shift+Enter deixa colocar vários links no campo, um por linha
+  const links = extrairLinks(texto)
+  const link = links[0] ?? ''
   const destino = pasta ?? c.pastaGaleria
 
   /** Junta links novos ao que já está na tela; dois ou mais viram a lista. */
   const acrescentar = (novos: string[]) => {
-    const atuais = linhas ?? (link ? [novaLinha(link)] : [])
+    const atuais = linhas ?? links.map(novaLinha)
     const juntos = juntarLinks(atuais, novos, novaLinha)
     if (juntos.length > 1) {
       setLinhas(juntos)
@@ -128,6 +131,8 @@ export default function Galeria() {
 
   const verArquivos = async (mais = false) => {
     if (!link) return
+    // Vários links no campo: vira a lista, cada um com a sua prévia
+    if (links.length > 1) return acrescentar([])
     const base = mais && previa ? previa : LISTAGEM_VAZIA
     setPrevia({ ...base, carregando: true, erro: null })
     try {
@@ -140,7 +145,7 @@ export default function Galeria() {
 
   const baixarUm = async (intervalo: string | null) => {
     if (!link) return avisar('Cole um link', 'erro')
-    const n = await window.api.adicionarGaleria([link], pasta, organizar, intervalo, formatoPasta)
+    const n = await window.api.adicionarGaleria(links, pasta, organizar, intervalo, formatoPasta)
     if (n) {
       setTexto('')
       setPrevia(null)
@@ -237,19 +242,19 @@ export default function Galeria() {
         ) : (
           <div className="linha-url">
             <Link2 />
-            <input
-              value={texto}
-              onChange={(e) => (setTexto(e.target.value), setPrevia(null))}
-              onKeyDown={(e) => e.key === 'Enter' && verArquivos()}
-              onPaste={(e) => {
-                // Um campo de uma linha juntaria vários links num só: vira a lista
+            <CampoLinks
+              valor={texto}
+              aoMudar={(t) => (setTexto(t), setPrevia(null))}
+              aoEnviar={() => verArquivos()}
+              aoColar={(e) => {
+                // Colou vários de uma vez: vira a lista
                 const colados = extrairLinks(e.clipboardData.getData('text'))
                 if (colados.length > 1) {
                   e.preventDefault()
                   acrescentar(colados)
                 }
               }}
-              placeholder="Cole o link de um perfil, post ou álbum (ou vários, um por linha)"
+              placeholder="Cole o link de um perfil, post ou álbum (Shift+Enter para colocar outro)"
             />
             {texto && (
               <button className="icone-btn leve" onClick={() => (setTexto(''), setPrevia(null))}>
@@ -538,7 +543,7 @@ function ItemDaGaleria({ item }: { item: ItemGaleria }) {
               {item.concluidoEm && ` · ${tempoRelativo(item.concluidoEm)}`}
               {' · '}
               {pastaCurta(item.pasta)}
-              {item.organizar === 'plana' ? ' (sem subpastas)' : item.organizar === 'site' ? ' (por site)' : item.organizar === 'personalizado' ? ` (${item.formatoPasta})` : ''}
+              {item.organizar === 'plana' ? ' (sem subpastas)' : item.organizar === 'site' ? ' (por site)' : item.organizar === 'perfil' ? ' (por perfil)' : item.organizar === 'personalizado' ? ` (${item.formatoPasta})` : ''}
               {item.intervalo ? ` · arquivos ${item.intervalo}` : ''}
             </span>
           </div>

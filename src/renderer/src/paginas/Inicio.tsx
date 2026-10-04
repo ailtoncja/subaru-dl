@@ -24,6 +24,7 @@ import { useEffect, useMemo, useState, type DragEvent } from 'react'
 import { bytes, duracao, numeroCurto, tempoRelativo, velocidade } from '@shared/formatar'
 import { estimarTamanho, FORMATOS_AUDIO, BITRATES, QUALIDADES } from '@shared/formatos'
 import type { Duplicado, InfoMidia, ItemLote, OpcoesDownload } from '@shared/tipos'
+import { CampoLinks } from '../componentes/CampoLinks'
 import { CampoPasta, SelecaoOrganizar } from '../componentes/Destino'
 import OpcoesAvancadas, { expandir, ListaPlaylist } from '../componentes/OpcoesAvancadas'
 import { adicionarLote, avisar, extrairLinks, useEstado } from '../estado'
@@ -53,8 +54,8 @@ export default function Inicio() {
   const ler = async (url: string) => {
     const links = extrairLinks(url)
     if (!links.length) return setErro('Cole um link que comece com http')
-    // Vários links: cartão de lote, com as mesmas opções para todos
-    if (links.length > 1) {
+    // Vários links (ou mais um num lote já aberto): cartão de lote, com as mesmas opções para todos
+    if (links.length > 1 || lote) {
       setLote((atual) => juntarLinks(atual ?? [], links, novaLinhaVideo))
       setPrevia(null)
       setErro('')
@@ -144,19 +145,20 @@ export default function Inicio() {
       <div className="cartao caixa-url" style={arrastando ? { borderColor: 'var(--amarelo)' } : undefined}>
         <div className="linha-url">
           <Link2 />
-          <input
-            value={texto}
+          <CampoLinks
+            valor={texto}
             autoFocus
-            onChange={(e) => setTexto(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && ler(texto)}
-            onPaste={(e) => {
+            aoMudar={setTexto}
+            aoEnviar={() => ler(texto)}
+            aoColar={(e) => {
+              // Campo vazio: colar já abre o link. Já tem link (Shift+Enter): só acrescenta a linha.
               const colado = e.clipboardData.getData('text')
-              if (extrairLinks(colado).length) {
+              if (!extrairLinks(texto).length && extrairLinks(colado).length) {
                 e.preventDefault()
                 void ler(colado)
               }
             }}
-            placeholder="Cole um link (ou vários, um por linha)"
+            placeholder="Cole um link (Shift+Enter para colocar outro)"
           />
           {texto && !carregando && (
             <button className="icone-btn leve" title="Limpar" onClick={() => (setTexto(''), setPrevia(null), setErro(''))}>

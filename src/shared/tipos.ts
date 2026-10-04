@@ -304,7 +304,7 @@ export interface EntradaHistorico {
 export type StatusGaleria = 'aguardando' | 'baixando' | 'pausado' | 'concluido' | 'erro'
 
 /** plana = sem subpastas · site = uma pasta por site · padrao = site → perfil (do gallery-dl) · personalizado = formato próprio */
-export type OrganizarGaleria = 'plana' | 'site' | 'padrao' | 'personalizado'
+export type OrganizarGaleria = 'plana' | 'site' | 'perfil' | 'padrao' | 'personalizado'
 
 /** Um arquivo listado na prévia da galeria. `indice` é a posição usada pelo --range do gallery-dl. */
 export interface ArquivoGaleria {
