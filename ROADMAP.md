@@ -115,6 +115,7 @@ Legenda: `[ ]` a fazer · `[x]` pronto
 - [x] Vários links de uma vez no Início, com as mesmas opções para todos (substitui a página Playlists & Lote)
 - [x] Em listas de vários links: pasta própria por link e "Ver" em cada um (vídeos da playlist no Início, miniaturas na Galeria)
 - [x] Playlist no Início já abre com a lista de vídeos para escolher
+- [x] "Sem subpastas" como primeira opção de organização no YouTube e na Galeria (Galeria também: por site, site → perfil, personalizado)
 
 ---
 

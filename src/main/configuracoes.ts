@@ -80,6 +80,7 @@ function configuracoesPadrao(): Configuracoes {
     galeriaPularBaixados: true,
     galeriaIntervalo: '',
     galeriaOrganizar: 'padrao',
+    galeriaFormatoPasta: '{category}/{user}',
     galeriaPausa: 0
   }
 }

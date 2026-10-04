@@ -44,7 +44,7 @@ export interface ApiSubaru {
 
   // Galeria
   obterGaleria(): Promise<ItemGaleria[]>
-  adicionarGaleria(urls: string[], pasta?: string | null, organizar?: OrganizarGaleria | null, intervalo?: string | null): Promise<number>
+  adicionarGaleria(urls: string[], pasta?: string | null, organizar?: OrganizarGaleria | null, intervalo?: string | null, formatoPasta?: string | null): Promise<number>
   /** Prévia: lista os arquivos de um link sem baixar. */
   listarArquivosGaleria(url: string, inicio: number, quantidade: number): Promise<{ arquivos: ArquivoGaleria[]; fim: boolean }>
   pausarGaleria(id: string): Promise<void>

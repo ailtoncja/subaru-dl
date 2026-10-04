@@ -463,11 +463,7 @@ const novaLinhaVideo = (url: string): LinhaVideo => ({ url, pasta: null, aberto:
 /** Vários links de uma vez: opções comuns, mas pasta e vídeos escolhidos por link. */
 function CartaoLote({ linhas, setLinhas, fechar }: { linhas: LinhaVideo[]; setLinhas: (f: (l: LinhaVideo[] | null) => LinhaVideo[] | null) => void; fechar: () => void }) {
   const config = useEstado((s) => s.config)!
-  // Em lote, organizar por playlist costuma ser o mais útil
-  const [o, setO] = useState<OpcoesDownload>(() => ({
-    ...structuredClone(config.padrao),
-    subpasta: config.padrao.subpasta === 'nenhuma' ? 'playlist' : config.padrao.subpasta
-  }))
+  const [o, setO] = useState<OpcoesDownload>(() => structuredClone(config.padrao))
   const [avancado, setAvancado] = useState(false)
   const mudar = (p: Partial<OpcoesDownload>) => setO((atual) => ({ ...atual, ...p }))
   const pastaComum = o.pasta ?? (o.modo === 'audio' ? config.pastaAudio : config.pastaVideo)

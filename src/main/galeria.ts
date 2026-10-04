@@ -49,6 +49,7 @@ export function carregarGaleria(): void {
     ...i,
     falhas: i.falhas ?? 0,
     organizar: i.organizar ?? 'padrao',
+    formatoPasta: i.formatoPasta ?? '{category}/{user}',
     intervalo: i.intervalo ?? null,
     dicaErro: i.dicaErro ?? null,
     status: i.status === 'baixando' ? 'pausado' : i.status
@@ -66,7 +67,8 @@ export function adicionarGaleria(
   urls: string[],
   pastaEscolhida?: string | null,
   organizarEscolhido?: OrganizarGaleria | null,
-  intervalo?: string | null
+  intervalo?: string | null,
+  formatoPasta?: string | null
 ): number {
   const pasta = pastaEscolhida || configuracoes().pastaGaleria
   const organizar = organizarEscolhido ?? configuracoes().galeriaOrganizar
@@ -79,6 +81,7 @@ export function adicionarGaleria(
       status: 'aguardando',
       pasta,
       organizar,
+      formatoPasta: formatoPasta?.trim() || configuracoes().galeriaFormatoPasta,
       intervalo: intervalo?.trim() || null,
       arquivos: 0,
       ultimoArquivo: null,
@@ -126,8 +129,16 @@ function argsAcesso(): string[] {
 function argumentos(item: ItemGaleria): string[] {
   const c = configuracoes()
   const a = ['--no-colors', '-d', item.pasta, ...argsAcesso()]
-  // Padrão do gallery-dl: site/perfil/…; "plana" põe tudo direto na pasta escolhida
-  if (item.organizar === 'plana') a.push('-o', 'directory=[]')
+  // Padrão do gallery-dl: site/perfil/…; os outros trocam a lista de subpastas
+  const subpastas =
+    item.organizar === 'plana'
+      ? []
+      : item.organizar === 'site'
+        ? ['{category}']
+        : item.organizar === 'personalizado'
+          ? item.formatoPasta.split(/[\\/]+/).map((p) => p.trim()).filter(Boolean)
+          : null
+  if (subpastas) a.push('-o', `directory=${JSON.stringify(subpastas)}`)
   if (c.galeriaPularBaixados) a.push('--download-archive', join(pastaDados(), 'galeria-baixados.sqlite3'))
   const intervalo = item.intervalo ?? c.galeriaIntervalo.trim()
   if (intervalo) a.push('--range', intervalo)

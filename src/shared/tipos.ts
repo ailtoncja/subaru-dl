@@ -262,6 +262,7 @@ export interface Configuracoes {
   galeriaPularBaixados: boolean
   galeriaIntervalo: string
   galeriaOrganizar: OrganizarGaleria
+  galeriaFormatoPasta: string
   /** Segundos de pausa entre um arquivo e outro (evita bloqueio em alguns sites) */
   galeriaPausa: number
 }
@@ -302,7 +303,8 @@ export interface EntradaHistorico {
 
 export type StatusGaleria = 'aguardando' | 'baixando' | 'pausado' | 'concluido' | 'erro'
 
-export type OrganizarGaleria = 'padrao' | 'plana'
+/** plana = sem subpastas · site = uma pasta por site · padrao = site → perfil (do gallery-dl) · personalizado = formato próprio */
+export type OrganizarGaleria = 'plana' | 'site' | 'padrao' | 'personalizado'
 
 /** Um arquivo listado na prévia da galeria. `indice` é a posição usada pelo --range do gallery-dl. */
 export interface ArquivoGaleria {
@@ -321,6 +323,8 @@ export interface ItemGaleria {
   status: StatusGaleria
   pasta: string
   organizar: OrganizarGaleria
+  /** Para "personalizado": pastas separadas por /, ex.: {category}/{user} */
+  formatoPasta: string
   /** Quais arquivos baixar (ex.: "1-3,7"), escolhidos na prévia. null = todos (ou o das configurações) */
   intervalo: string | null
   arquivos: number

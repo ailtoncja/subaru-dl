@@ -16,6 +16,10 @@ import { buscarInfo } from './ytdlp'
 let janela: BrowserWindow | null = null
 let saindo = false
 
+// Em desenvolvimento, dados separados: dá para testar com o programa instalado aberto,
+// sem mexer na fila, histórico e configurações de quem usa
+if (!app.isPackaged) app.setPath('userData', join(app.getPath('appData'), 'Subaru DL (dev)'))
+
 // Uma instância só: abrir de novo traz a janela existente para frente
 if (!app.requestSingleInstanceLock()) {
   app.quit()
@@ -109,7 +113,7 @@ const handlers: Handlers = {
   limparHistorico: async () => historico.limparHistorico(),
 
   obterGaleria: async () => galeria.listarGaleria(),
-  adicionarGaleria: async (urls, pasta, organizar, intervalo) => galeria.adicionarGaleria(urls, pasta, organizar, intervalo),
+  adicionarGaleria: async (urls, pasta, organizar, intervalo, formato) => galeria.adicionarGaleria(urls, pasta, organizar, intervalo, formato),
   listarArquivosGaleria: async (url, inicio, quantidade) => galeria.listarArquivosGaleria(url, inicio, quantidade),
   pausarGaleria: async (id) => galeria.pausarGaleria(id),
   retomarGaleria: async (id) => galeria.retomarGaleria(id),
