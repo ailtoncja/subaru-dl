@@ -111,6 +111,8 @@ Legenda: `[ ]` a fazer · `[x]` pronto
 
 ## Fase 3 — Galeria ✅
 - [x] 74. Galeria de imagens com gallery-dl (Instagram, Twitter, artistas, mangás)
+- [x] Prévia da galeria: ver as miniaturas e baixar só os arquivos marcados
+- [x] Vários links de uma vez no Início, com as mesmas opções para todos (substitui a página Playlists & Lote)
 
 ---
 
