@@ -329,6 +329,8 @@ export interface ItemGaleria {
   intervalo: string | null
   arquivos: number
   ultimoArquivo: string | null
+  /** Últimas imagens baixadas (até 4), para o mosaico da lista */
+  amostras: string[]
   pulados: number
   falhas: number
   dicaErro: string | null

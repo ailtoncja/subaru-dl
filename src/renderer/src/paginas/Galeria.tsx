@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { useState, type DragEvent } from 'react'
 import { tempoRelativo } from '@shared/formatar'
+import { urlArquivoLocal } from '@shared/miniatura'
 import type { ArquivoGaleria, ItemGaleria, OrganizarGaleria, StatusGaleria } from '@shared/tipos'
 import { pastaCurta, SelecaoOrganizarGaleria } from '../componentes/Destino'
 import { juntarLinks, ListaLinks, type LinhaLink } from '../componentes/ListaLinks'
@@ -465,9 +466,7 @@ function ItemDaGaleria({ item }: { item: ItemGaleria }) {
   return (
     <div className="cartao tarefa">
       <div className="topo">
-        <div className="miniatura quadrada">
-          <div className="vazia">{item.status === 'baixando' ? <Loader2 className="girando" /> : <Images />}</div>
-        </div>
+        <Mosaico amostras={item.amostras} baixando={item.status === 'baixando'} />
         <div className="texto">
           <div className="nome">
             <strong className="selecionavel mono" style={{ fontSize: 14 }} title={item.url}>
@@ -523,6 +522,31 @@ function ItemDaGaleria({ item }: { item: ItemGaleria }) {
           <div className={item.status === 'erro' ? 'erro-texto' : 'estado-texto aviso'}>{item.erro}</div>
           {item.dicaErro && <div className="dica">{item.dicaErro}</div>}
         </div>
+      )}
+    </div>
+  )
+}
+
+/** Mosaico com as últimas imagens baixadas: 1 inteira, 2 lado a lado, 3–4 em grade. */
+function Mosaico({ amostras, baixando }: { amostras: string[]; baixando: boolean }) {
+  const [quebradas, setQuebradas] = useState<string[]>([])
+  const visiveis = amostras.filter((a) => !quebradas.includes(a)).slice(-4)
+  if (!visiveis.length) {
+    return (
+      <div className="miniatura">
+        <div className="vazia">{baixando ? <Loader2 className="girando" /> : <Images />}</div>
+      </div>
+    )
+  }
+  return (
+    <div className={`miniatura mosaico qtd-${visiveis.length}`}>
+      {visiveis.map((a) => (
+        <img key={a} src={urlArquivoLocal(a)} alt="" loading="lazy" onError={() => setQuebradas((q) => [...q, a])} />
+      ))}
+      {baixando && (
+        <span className="baixando">
+          <Loader2 className="girando" />
+        </span>
       )}
     </div>
   )
