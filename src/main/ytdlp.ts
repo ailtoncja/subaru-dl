@@ -366,13 +366,23 @@ function lerInfo(d: any): InfoMidia {
     inicio: c.start_time ?? 0,
     fim: c.end_time ?? 0
   }))
+  // A lista rápida do yt-dlp traz capas de vários tamanhos: pega a primeira com ~300 px de largura ou mais
+  const miniaturaEntrada = (e: any): string | null => {
+    const lista: any[] = (e.thumbnails ?? []).filter((t: any) => t?.url)
+    const boa = lista.find((t) => (t.width ?? 0) >= 300) ?? lista[lista.length - 1]
+    if (boa) return boa.url
+    if (e.thumbnail) return e.thumbnail
+    // Vídeos do YouTube sempre têm esta
+    return /^[\w-]{11}$/.test(e.id ?? '') && /youtu/i.test(`${e.url ?? ''}${e.ie_key ?? ''}`) ? `https://i.ytimg.com/vi/${e.id}/mqdefault.jpg` : null
+  }
   const entradas: EntradaPlaylist[] = ehPlaylist
     ? (d.entries ?? []).filter(Boolean).map((e: any, i: number) => ({
         indice: e.playlist_index ?? i + 1,
         id: e.id ?? String(i),
         titulo: e.title ?? e.id ?? `Item ${i + 1}`,
         duracao: e.duration ?? null,
-        url: e.url ?? e.webpage_url ?? ''
+        url: e.url ?? e.webpage_url ?? '',
+        miniatura: miniaturaEntrada(e)
       }))
     : []
   // Em playlists e canais, a capa do primeiro vídeo fica melhor que o banner do canal
