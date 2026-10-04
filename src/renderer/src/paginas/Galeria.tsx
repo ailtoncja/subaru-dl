@@ -114,6 +114,14 @@ export default function Galeria() {
     if (achados.length) acrescentar(achados)
   }
 
+  /** Shift+Enter: o link vai para a lista na hora e o campo fica livre para o próximo. */
+  const acrescentarAoCampo = () => {
+    if (!links.length) return
+    setLinhas(juntarLinks(linhas ?? [], links, novaLinha))
+    setTexto('')
+    setPrevia(null)
+  }
+
   // Arrastar links ou um .txt com links
   const soltar = async (e: DragEvent) => {
     e.preventDefault()
@@ -132,7 +140,7 @@ export default function Galeria() {
   const verArquivos = async (mais = false) => {
     if (!link) return
     // Vários links no campo: vira a lista, cada um com a sua prévia
-    if (links.length > 1) return acrescentar([])
+    if (links.length > 1 || linhas) return linhas ? acrescentarAoCampo() : acrescentar([])
     const base = mais && previa ? previa : LISTAGEM_VAZIA
     setPrevia({ ...base, carregando: true, erro: null })
     try {
@@ -200,79 +208,83 @@ export default function Galeria() {
         onDragLeave={() => setArrastando(false)}
         onDrop={soltar}
       >
-        {linhas ? (
-          <ListaLinks
-            linhas={linhas}
-            mudarLinha={mudarLinha}
-            remover={(i) => {
-              const resto = linhas.filter((_, n) => n !== i)
-              // Sobrou um só: volta para o campo simples
-              if (resto.length === 1) setTexto(resto[0].url)
-              setLinhas(resto.length > 1 ? resto : null)
+        <div className="linha-url">
+          <Link2 />
+          <CampoLinks
+            valor={texto}
+            aoMudar={(t) => (setTexto(t), setPrevia(null))}
+            aoEnviar={() => verArquivos()}
+            aoAcrescentar={acrescentarAoCampo}
+            aoColar={(e) => {
+              // Colou vários de uma vez: vira a lista
+              const colados = extrairLinks(e.clipboardData.getData('text'))
+              if (colados.length > 1) {
+                e.preventDefault()
+                acrescentar(colados)
+              }
             }}
-            acrescentar={acrescentar}
-            limpar={() => setLinhas(null)}
-            pastaComum={destino}
-            aoAbrir={(i) => lerLinha(i)}
-            info={(l) => ({
-              titulo: null,
-              miniatura: (() => {
-                const primeira = l.arquivos.find((a) => !a.video)
-                return primeira ? urlMiniaturaRemota(primeira.url, l.url) : null
-              })(),
-              carregando: l.carregando,
-              erro: l.erro,
-              resumo: l.lido ? `${l.marcados.size} de ${l.arquivos.length}${l.fim ? '' : '+'}` : null
-            })}
-            previa={(l, i) => (
-              <GradeArquivos
-                l={l}
-                pagina={l.url}
-                alternar={(indice) => {
-                  const marcados = new Set(l.marcados)
-                  if (marcados.has(indice)) marcados.delete(indice)
-                  else marcados.add(indice)
-                  mudarLinha(i, { marcados })
-                }}
-                marcarTodos={(sim) => mudarLinha(i, { marcados: sim ? new Set(l.arquivos.map((a) => a.indice)) : new Set() })}
-                carregarMais={() => lerLinha(i, true)}
-              />
-            )}
+            placeholder="Cole o link de um perfil, post ou álbum (Shift+Enter para adicionar à lista)"
           />
-        ) : (
-          <div className="linha-url">
-            <Link2 />
-            <CampoLinks
-              valor={texto}
-              aoMudar={(t) => (setTexto(t), setPrevia(null))}
-              aoEnviar={() => verArquivos()}
-              aoColar={(e) => {
-                // Colou vários de uma vez: vira a lista
-                const colados = extrairLinks(e.clipboardData.getData('text'))
-                if (colados.length > 1) {
-                  e.preventDefault()
-                  acrescentar(colados)
-                }
-              }}
-              placeholder="Cole o link de um perfil, post ou álbum (Shift+Enter para colocar outro)"
-            />
-            {texto && (
-              <button className="icone-btn leve" onClick={() => (setTexto(''), setPrevia(null))}>
-                <X />
+          {texto && (
+            <button className="icone-btn leve" onClick={() => (setTexto(''), setPrevia(null))}>
+              <X />
+            </button>
+          )}
+          <button className="icone-btn leve" title="Importar uma lista de links (.txt)" onClick={importar}>
+            <FileText />
+          </button>
+          <button className="btn" onClick={colar}>
+            <ClipboardPaste className="amarelo" /> Colar
+          </button>
+          {!linhas && (
+            <>
+              <button className="btn" disabled={!link || previa?.carregando} onClick={() => verArquivos()} title="Lista os arquivos para você escolher quais baixar">
+                {previa?.carregando ? <Loader2 className="girando" /> : <Eye />} Ver arquivos
               </button>
-            )}
-            <button className="icone-btn leve" title="Importar uma lista de links (.txt)" onClick={importar}>
-              <FileText />
-            </button>
-            <button className="btn" onClick={colar}>
-              <ClipboardPaste className="amarelo" /> Colar
-            </button>
-            <button className="btn" disabled={!link || previa?.carregando} onClick={() => verArquivos()} title="Lista os arquivos para você escolher quais baixar">
-              {previa?.carregando ? <Loader2 className="girando" /> : <Eye />} Ver arquivos
-            </button>
-            <button className="btn primario grande" disabled={!link} onClick={() => baixarUm(null)}>
-              <Images /> Baixar tudo
-            </button>
+              <button className="btn primario grande" disabled={!link} onClick={() => baixarUm(null)}>
+                <Images /> Baixar tudo
+              </button>
+            </>
+          )}
+        </div>
+        {linhas && (
+          <div style={{ marginTop: 12 }}>
+            <ListaLinks
+              linhas={linhas}
+              mudarLinha={mudarLinha}
+              remover={(i) => {
+                const resto = linhas.filter((_, n) => n !== i)
+                setLinhas(resto.length ? resto : null)
+              }}
+              acrescentar={acrescentar}
+              limpar={() => setLinhas(null)}
+              pastaComum={destino}
+              aoAbrir={(i) => lerLinha(i)}
+              info={(l) => ({
+                titulo: null,
+                miniatura: (() => {
+                  const primeira = l.arquivos.find((a) => !a.video)
+                  return primeira ? urlMiniaturaRemota(primeira.url, l.url) : null
+                })(),
+                carregando: l.carregando,
+                erro: l.erro,
+                resumo: l.lido ? `${l.marcados.size} de ${l.arquivos.length}${l.fim ? '' : '+'}` : null
+              })}
+              previa={(l, i) => (
+                <GradeArquivos
+                  l={l}
+                  pagina={l.url}
+                  alternar={(indice) => {
+                    const marcados = new Set(l.marcados)
+                    if (marcados.has(indice)) marcados.delete(indice)
+                    else marcados.add(indice)
+                    mudarLinha(i, { marcados })
+                  }}
+                  marcarTodos={(sim) => mudarLinha(i, { marcados: sim ? new Set(l.arquivos.map((a) => a.indice)) : new Set() })}
+                  carregarMais={() => lerLinha(i, true)}
+                />
+              )}
+            />
           </div>
         )}
 
@@ -310,7 +322,7 @@ export default function Galeria() {
           </label>
           {linhas && (
             <button className="btn primario grande" style={{ marginLeft: 'auto' }} onClick={baixarLinhas}>
-              <Images /> Baixar {linhas.length} links
+              <Images /> Baixar {linhas.length} {linhas.length === 1 ? 'link' : 'links'}
             </button>
           )}
         </div>

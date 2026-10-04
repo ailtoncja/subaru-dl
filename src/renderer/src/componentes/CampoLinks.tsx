@@ -1,10 +1,11 @@
-// Campo de links: Enter envia; Shift+Enter abre outra linha para colar mais um link.
+// Campo de links: Enter envia; Shift+Enter manda o link para a lista e deixa o campo livre para o próximo.
 import { useEffect, useLayoutEffect, useRef, type ClipboardEvent } from 'react'
 
 export function CampoLinks({
   valor,
   aoMudar,
   aoEnviar,
+  aoAcrescentar,
   aoColar,
   placeholder,
   autoFocus
@@ -12,6 +13,8 @@ export function CampoLinks({
   valor: string
   aoMudar: (texto: string) => void
   aoEnviar: () => void
+  /** Shift+Enter: guarda o que está no campo na lista */
+  aoAcrescentar: () => void
   aoColar?: (e: ClipboardEvent<HTMLTextAreaElement>) => void
   placeholder?: string
   autoFocus?: boolean
@@ -52,10 +55,10 @@ export function CampoLinks({
       placeholder={placeholder}
       onChange={(e) => aoMudar(e.target.value)}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-          e.preventDefault()
-          aoEnviar()
-        }
+        if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
+        e.preventDefault()
+        if (e.shiftKey) aoAcrescentar()
+        else aoEnviar()
       }}
       onPaste={aoColar}
     />

@@ -57,7 +57,7 @@ export function ListaLinks<T extends LinhaLink>({
     <div className="lista-links">
       <div className="flex">
         <strong className="flex-1">
-          {linhas.length} links <span className="muted pequeno">· cada um pode ir para uma pasta diferente</span>
+          {linhas.length} {linhas.length === 1 ? 'link' : 'links'} <span className="muted pequeno">· cada um pode ir para uma pasta diferente</span>
         </strong>
         <button className="btn fantasma pequeno" onClick={colar}>
           <ClipboardPaste /> Colar mais
