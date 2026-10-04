@@ -8,6 +8,7 @@ import type {
   InfoMidia,
   ItemFila,
   ItemGaleria,
+  ItemLote,
   NomeFerramenta,
   OpcoesDownload,
   OrganizarGaleria,
@@ -22,6 +23,8 @@ export interface ApiSubaru {
   adicionar(urls: string[], opcoes?: Partial<OpcoesDownload>, iniciar?: boolean): Promise<{ adicionados: number; duplicados: Duplicado[] }>
   adicionarMesmoAssim(urls: string[], opcoes?: Partial<OpcoesDownload>, iniciar?: boolean): Promise<void>
   adicionarComInfo(url: string, info: InfoMidia, opcoes: Partial<OpcoesDownload>, iniciar: boolean): Promise<void>
+  /** Vários links, cada um com as suas opções. */
+  adicionarLote(lote: ItemLote[], iniciar: boolean, ignorarDuplicados?: boolean): Promise<{ adicionados: number; duplicados: Duplicado[] }>
   remover(ids: string[]): Promise<void>
   iniciarFila(): Promise<void>
   pausarTodos(): Promise<void>
@@ -104,6 +107,7 @@ export const CANAIS_INVOKE = [
   'adicionar',
   'adicionarMesmoAssim',
   'adicionarComInfo',
+  'adicionarLote',
   'remover',
   'iniciarFila',
   'pausarTodos',

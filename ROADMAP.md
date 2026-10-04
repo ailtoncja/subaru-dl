@@ -113,6 +113,8 @@ Legenda: `[ ]` a fazer · `[x]` pronto
 - [x] 74. Galeria de imagens com gallery-dl (Instagram, Twitter, artistas, mangás)
 - [x] Prévia da galeria: ver as miniaturas e baixar só os arquivos marcados
 - [x] Vários links de uma vez no Início, com as mesmas opções para todos (substitui a página Playlists & Lote)
+- [x] Em listas de vários links: pasta própria por link e "Ver" em cada um (vídeos da playlist no Início, miniaturas na Galeria)
+- [x] Playlist no Início já abre com a lista de vídeos para escolher
 
 ---
 

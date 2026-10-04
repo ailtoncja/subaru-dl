@@ -25,6 +25,7 @@ import { useState, type DragEvent } from 'react'
 import { tempoRelativo } from '@shared/formatar'
 import type { ArquivoGaleria, ItemGaleria, OrganizarGaleria, StatusGaleria } from '@shared/tipos'
 import { pastaCurta } from '../componentes/Destino'
+import { juntarLinks, ListaLinks, type LinhaLink } from '../componentes/ListaLinks'
 import { compactar } from '../componentes/OpcoesAvancadas'
 import { avisar, extrairLinks, salvarConfig, useEstado } from '../estado'
 
@@ -39,31 +40,62 @@ const NOMES: Record<StatusGaleria, string> = {
 const SITES = 'Instagram, X/Twitter, Pixiv, DeviantArt, Reddit, Tumblr, Pinterest, ArtStation, Bluesky, MangaDex, Imgur e muitos outros'
 const POR_VEZ = 200
 
-interface Previa {
-  url: string
+/** Arquivos listados de um link (prévia) e quais estão marcados. */
+interface Listagem {
   arquivos: ArquivoGaleria[]
   fim: boolean
   marcados: Set<number>
+  carregando: boolean
+  erro: string | null
+  lido: boolean
+}
+
+const LISTAGEM_VAZIA: Listagem = { arquivos: [], fim: false, marcados: new Set(), carregando: false, erro: null, lido: false }
+
+interface LinhaGaleria extends LinhaLink, Listagem {}
+
+const novaLinha = (url: string): LinhaGaleria => ({ url, pasta: null, aberto: false, ...LISTAGEM_VAZIA, marcados: new Set() })
+
+const mensagemErro = (e: unknown) => (e instanceof Error ? e.message.replace(/^Error invoking remote method '\w+': (Error: )?/, '') : String(e))
+
+/** Lê (mais) arquivos de um link e devolve a listagem atualizada. Tudo novo já vem marcado. */
+async function lerMais(url: string, atual: Listagem): Promise<Listagem> {
+  const r = await window.api.listarArquivosGaleria(url, atual.arquivos.length + 1, POR_VEZ)
+  const marcados = new Set(atual.marcados)
+  for (const a of r.arquivos) marcados.add(a.indice)
+  // Só os campos da listagem: quem chama mistura com o resto da linha (pasta, aberto…) sem sobrescrever
+  return { arquivos: [...atual.arquivos, ...r.arquivos], fim: r.fim, marcados, carregando: false, erro: null, lido: true }
+}
+
+/** null = baixar tudo; "0" nunca sai daqui (quem chama confere se há marcados). */
+function intervaloDe(l: Listagem): string | null {
+  if (!l.lido) return null
+  return l.marcados.size === l.arquivos.length && l.fim ? null : compactar([...l.marcados])
 }
 
 export default function Galeria() {
   const { galeria, config } = useEstado()
   const c = config!
   const [texto, setTexto] = useState('')
-  // Pasta e organização escolhidas para os próximos links (null = as das configurações)
+  // Pasta e organização comuns (null = as das configurações)
   const [pasta, setPasta] = useState<string | null>(null)
   const [organizar, setOrganizar] = useState<OrganizarGaleria>(c.galeriaOrganizar)
-  const [previa, setPrevia] = useState<Previa | null>(null)
-  const [lendo, setLendo] = useState(false)
-  const [erro, setErro] = useState('')
+  // Um link: prévia única. Vários: lista com pasta e prévia por link.
+  const [previa, setPrevia] = useState<Listagem | null>(null)
+  const [linhas, setLinhas] = useState<LinhaGaleria[] | null>(null)
   const [arrastando, setArrastando] = useState(false)
-  const links = [...new Set(extrairLinks(texto))]
+  const link = extrairLinks(texto)[0] ?? ''
   const destino = pasta ?? c.pastaGaleria
 
-  /** Junta links novos aos que já estão no campo (sem repetir). */
+  /** Junta links novos ao que já está na tela; dois ou mais viram a lista. */
   const acrescentar = (novos: string[]) => {
-    setPrevia(null)
-    setTexto((atual) => [...new Set([...extrairLinks(atual), ...novos])].join('\n'))
+    const atuais = linhas ?? (link ? [novaLinha(link)] : [])
+    const juntos = juntarLinks(atuais, novos, novaLinha)
+    if (juntos.length > 1) {
+      setLinhas(juntos)
+      setTexto('')
+      setPrevia(null)
+    } else if (juntos[0]) setTexto(juntos[0].url)
   }
 
   const colar = async () => {
@@ -90,55 +122,54 @@ export default function Galeria() {
     else avisar('Nada para adicionar no que foi solto', 'erro')
   }
 
-  const baixar = async (lista: string[], intervalo?: string | null) => {
-    if (!lista.length) return avisar('Cole pelo menos um link', 'erro')
-    const n = await window.api.adicionarGaleria(lista, pasta, organizar, intervalo ?? null)
+  // ---------- Um link ----------
+
+  const verArquivos = async (mais = false) => {
+    if (!link) return
+    const base = mais && previa ? previa : LISTAGEM_VAZIA
+    setPrevia({ ...base, carregando: true, erro: null })
+    try {
+      const nova = await lerMais(link, base)
+      setPrevia(nova.arquivos.length ? nova : { ...nova, erro: 'Nenhum arquivo encontrado nesse link.' })
+    } catch (e) {
+      setPrevia({ ...base, carregando: false, erro: mensagemErro(e) })
+    }
+  }
+
+  const baixarUm = async (intervalo: string | null) => {
+    if (!link) return avisar('Cole um link', 'erro')
+    const n = await window.api.adicionarGaleria([link], pasta, organizar, intervalo)
     if (n) {
       setTexto('')
       setPrevia(null)
-      avisar(n === 1 ? 'Começou a baixar' : `${n} links na fila`)
+      avisar('Começou a baixar')
     }
   }
 
-  /** Prévia: lista os arquivos sem baixar, para escolher quais quer. */
-  const verArquivos = async (mais = false) => {
-    const url = mais && previa ? previa.url : links[0]
-    if (!url) return
-    setLendo(true)
-    setErro('')
+  // ---------- Vários links ----------
+
+  const mudarLinha = (i: number, p: Partial<LinhaGaleria>) => setLinhas((ls) => ls && ls.map((l, n) => (n === i ? { ...l, ...p } : l)))
+
+  const lerLinha = async (i: number, mais = false) => {
+    const l = linhas?.[i]
+    if (!l || l.carregando || (l.lido && !mais)) return
+    mudarLinha(i, { carregando: true, erro: null })
     try {
-      const inicio = mais && previa ? previa.arquivos.length + 1 : 1
-      const r = await window.api.listarArquivosGaleria(url, inicio, POR_VEZ)
-      if (mais && previa) {
-        const marcados = new Set(previa.marcados)
-        for (const a of r.arquivos) marcados.add(a.indice)
-        setPrevia({ ...previa, arquivos: [...previa.arquivos, ...r.arquivos], fim: r.fim, marcados })
-      } else {
-        if (!r.arquivos.length) setErro('Nenhum arquivo encontrado nesse link.')
-        setPrevia(r.arquivos.length ? { url, ...r, marcados: new Set(r.arquivos.map((a) => a.indice)) } : null)
-      }
+      const nova = await lerMais(l.url, l)
+      setLinhas((ls) => ls && ls.map((x) => (x.url === l.url ? { ...x, ...nova, erro: nova.arquivos.length ? null : 'Nenhum arquivo encontrado' } : x)))
     } catch (e) {
-      setErro(e instanceof Error ? e.message.replace(/^Error invoking remote method '\w+': (Error: )?/, '') : String(e))
-    } finally {
-      setLendo(false)
+      setLinhas((ls) => ls && ls.map((x) => (x.url === l.url ? { ...x, carregando: false, erro: mensagemErro(e) } : x)))
     }
   }
 
-  const alternar = (indice: number) =>
-    previa &&
-    setPrevia((p) => {
-      if (!p) return p
-      const marcados = new Set(p.marcados)
-      if (marcados.has(indice)) marcados.delete(indice)
-      else marcados.add(indice)
-      return { ...p, marcados }
-    })
-
-  const baixarMarcados = () => {
-    if (!previa || !previa.marcados.size) return avisar('Marque pelo menos um arquivo', 'erro')
-    const todos = previa.marcados.size === previa.arquivos.length
-    // Tudo marcado e a lista acabou: baixa sem limitar (pega também arquivos novos)
-    void baixar([previa.url], todos && previa.fim ? null : compactar([...previa.marcados]))
+  const baixarLinhas = async () => {
+    if (!linhas?.length) return
+    const vazias = linhas.filter((l) => l.lido && !l.marcados.size)
+    if (vazias.length) return avisar(`${vazias.length} link(s) sem nenhum arquivo marcado`, 'erro')
+    let n = 0
+    for (const l of linhas) n += await window.api.adicionarGaleria([l.url], l.pasta ?? pasta, organizar, intervaloDe(l))
+    setLinhas(null)
+    avisar(`${n} link(s) na fila`)
   }
 
   return (
@@ -162,24 +193,41 @@ export default function Galeria() {
         onDragLeave={() => setArrastando(false)}
         onDrop={soltar}
       >
-        {links.length > 1 || texto.includes('\n') ? (
-          <>
-            <div className="flex" style={{ marginBottom: 10 }}>
-              <strong className="flex-1">
-                {links.length} links <span className="muted pequeno">· um por linha, todos com as mesmas opções</span>
-              </strong>
-              <button className="btn fantasma pequeno" onClick={colar}>
-                <ClipboardPaste /> Colar mais
-              </button>
-              <button className="btn fantasma pequeno" onClick={importar}>
-                <FileText /> Importar .txt
-              </button>
-              <button className="icone-btn leve" title="Limpar" onClick={() => (setTexto(''), setPrevia(null), setErro(''))}>
-                <X />
-              </button>
-            </div>
-            <textarea className="mono" value={texto} onChange={(e) => setTexto(e.target.value)} />
-          </>
+        {linhas ? (
+          <ListaLinks
+            linhas={linhas}
+            mudarLinha={mudarLinha}
+            remover={(i) => {
+              const resto = linhas.filter((_, n) => n !== i)
+              // Sobrou um só: volta para o campo simples
+              if (resto.length === 1) setTexto(resto[0].url)
+              setLinhas(resto.length > 1 ? resto : null)
+            }}
+            acrescentar={acrescentar}
+            limpar={() => setLinhas(null)}
+            pastaComum={destino}
+            aoAbrir={(i) => lerLinha(i)}
+            info={(l) => ({
+              titulo: null,
+              miniatura: l.arquivos.find((a) => !a.video)?.url ?? null,
+              carregando: l.carregando,
+              erro: l.erro,
+              resumo: l.lido ? `${l.marcados.size} de ${l.arquivos.length}${l.fim ? '' : '+'}` : null
+            })}
+            previa={(l, i) => (
+              <GradeArquivos
+                l={l}
+                alternar={(indice) => {
+                  const marcados = new Set(l.marcados)
+                  if (marcados.has(indice)) marcados.delete(indice)
+                  else marcados.add(indice)
+                  mudarLinha(i, { marcados })
+                }}
+                marcarTodos={(sim) => mudarLinha(i, { marcados: sim ? new Set(l.arquivos.map((a) => a.indice)) : new Set() })}
+                carregarMais={() => lerLinha(i, true)}
+              />
+            )}
+          />
         ) : (
           <div className="linha-url">
             <Link2 />
@@ -198,7 +246,7 @@ export default function Galeria() {
               placeholder="Cole o link de um perfil, post ou álbum (ou vários, um por linha)"
             />
             {texto && (
-              <button className="icone-btn leve" onClick={() => (setTexto(''), setPrevia(null), setErro(''))}>
+              <button className="icone-btn leve" onClick={() => (setTexto(''), setPrevia(null))}>
                 <X />
               </button>
             )}
@@ -208,10 +256,10 @@ export default function Galeria() {
             <button className="btn" onClick={colar}>
               <ClipboardPaste className="amarelo" /> Colar
             </button>
-            <button className="btn" disabled={!links.length || lendo} onClick={() => verArquivos()} title="Lista os arquivos para você escolher quais baixar">
-              {lendo ? <Loader2 className="girando" /> : <Eye />} Ver arquivos
+            <button className="btn" disabled={!link || previa?.carregando} onClick={() => verArquivos()} title="Lista os arquivos para você escolher quais baixar">
+              {previa?.carregando ? <Loader2 className="girando" /> : <Eye />} Ver arquivos
             </button>
-            <button className="btn primario grande" disabled={!links.length} onClick={() => baixar(links)}>
+            <button className="btn primario grande" disabled={!link} onClick={() => baixarUm(null)}>
               <Images /> Baixar tudo
             </button>
           </div>
@@ -220,7 +268,7 @@ export default function Galeria() {
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px 18px', marginTop: 12, font: '12.5px var(--mono)', color: 'var(--muted)' }}>
           <span className="flex" style={{ gap: 8 }} title={destino}>
             <FolderOpen width={16} />
-            Salvar em: <span style={{ color: 'var(--texto)' }}>{pastaCurta(destino)}</span>
+            {linhas ? 'Pasta comum:' : 'Salvar em:'} <span style={{ color: 'var(--texto)' }}>{pastaCurta(destino)}</span>
             <button
               className="link-amarelo mono pequeno"
               onClick={async () => {
@@ -244,63 +292,51 @@ export default function Galeria() {
             <input type="checkbox" checked={c.galeriaPularBaixados} onChange={(e) => salvarConfig({ galeriaPularBaixados: e.target.checked })} />
             Pular o que já baixei
           </label>
-          {(links.length > 1 || texto.includes('\n')) && (
-            <button className="btn primario" style={{ marginLeft: 'auto' }} disabled={!links.length} onClick={() => baixar(links)}>
-              <Images /> Baixar {links.length} links
+          {linhas && (
+            <button className="btn primario grande" style={{ marginLeft: 'auto' }} onClick={baixarLinhas}>
+              <Images /> Baixar {linhas.length} links
             </button>
           )}
         </div>
       </div>
 
-      {erro && (
+      {previa?.erro && (
         <div className="aviso-amarelo">
           <Info />
-          <span className="flex-1 selecionavel">{erro}</span>
+          <span className="flex-1 selecionavel">{previa.erro}</span>
         </div>
       )}
 
-      {previa && (
+      {previa && previa.arquivos.length > 0 && (
         <div className="cartao recheado" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div className="flex">
-            <strong className="flex-1">
-              {previa.arquivos.length}
-              {previa.fim ? '' : '+'} arquivo(s) <span className="muted mono pequeno">· {previa.marcados.size} marcado(s)</span>
-            </strong>
-            <button className="btn pequeno" onClick={() => setPrevia({ ...previa, marcados: new Set(previa.arquivos.map((a) => a.indice)) })}>
-              <CheckSquare /> Marcar todos
-            </button>
-            <button className="btn pequeno" onClick={() => setPrevia({ ...previa, marcados: new Set() })}>
-              <Square /> Desmarcar
-            </button>
-            <button className="icone-btn leve" title="Fechar a prévia" onClick={() => setPrevia(null)}>
-              <X />
-            </button>
-          </div>
-          <div className="grade-arquivos">
-            {previa.arquivos.map((a) => (
-              <MiniaturaArquivo key={a.indice} arquivo={a} marcado={previa.marcados.has(a.indice)} aoClicar={() => alternar(a.indice)} />
-            ))}
-          </div>
-          <div className="flex">
-            {!previa.fim && (
-              <button className="btn" disabled={lendo} onClick={() => verArquivos(true)}>
-                {lendo ? <Loader2 className="girando" /> : <Download />} Carregar mais {POR_VEZ}
-              </button>
-            )}
-            <span className="muted pequeno flex-1">
-              {previa.fim ? 'Esses são todos os arquivos do link.' : 'Mostrando os primeiros. "Baixar tudo" pega também os que ainda não apareceram.'}
-            </span>
-            <button className="btn" onClick={() => baixar([previa.url])}>
+          <GradeArquivos
+            l={previa}
+            alternar={(indice) => {
+              const marcados = new Set(previa.marcados)
+              if (marcados.has(indice)) marcados.delete(indice)
+              else marcados.add(indice)
+              setPrevia({ ...previa, marcados })
+            }}
+            marcarTodos={(sim) => setPrevia({ ...previa, marcados: sim ? new Set(previa.arquivos.map((a) => a.indice)) : new Set() })}
+            carregarMais={() => verArquivos(true)}
+            fechar={() => setPrevia(null)}
+          />
+          <div className="flex" style={{ justifyContent: 'flex-end' }}>
+            <button className="btn" onClick={() => baixarUm(null)}>
               <Images /> Baixar tudo
             </button>
-            <button className="btn primario grande" disabled={!previa.marcados.size} onClick={baixarMarcados}>
+            <button
+              className="btn primario grande"
+              disabled={!previa.marcados.size}
+              onClick={() => (previa.marcados.size ? baixarUm(intervaloDe(previa)) : avisar('Marque pelo menos um arquivo', 'erro'))}
+            >
               <Download /> Baixar {previa.marcados.size} marcado(s)
             </button>
           </div>
         </div>
       )}
 
-      {c.cookies.origem === 'nenhum' && !previa && (
+      {c.cookies.origem === 'nenhum' && !previa && !linhas && (
         <div className="aviso-azul">
           <Info />
           <span>Instagram, X/Twitter e Pixiv costumam exigir login. Ative os cookies do navegador em Configurações → Rede e login.</span>
@@ -331,6 +367,64 @@ export default function Galeria() {
         </div>
       )}
     </div>
+  )
+}
+
+/** Grade de miniaturas com marcar/desmarcar e "carregar mais" (prévia de um link). */
+function GradeArquivos({
+  l,
+  alternar,
+  marcarTodos,
+  carregarMais,
+  fechar
+}: {
+  l: Listagem
+  alternar: (indice: number) => void
+  marcarTodos: (sim: boolean) => void
+  carregarMais: () => void
+  fechar?: () => void
+}) {
+  if (l.carregando && !l.arquivos.length) {
+    return (
+      <span className="muted pequeno flex">
+        <Loader2 className="girando" width={15} /> Listando os arquivos…
+      </span>
+    )
+  }
+  if (l.erro && !l.arquivos.length) return <span className="erro-texto pequeno">{l.erro}</span>
+  return (
+    <>
+      <div className="flex">
+        <strong className="flex-1">
+          {l.arquivos.length}
+          {l.fim ? '' : '+'} arquivo(s) <span className="muted mono pequeno">· {l.marcados.size} marcado(s)</span>
+        </strong>
+        <button className="btn pequeno" onClick={() => marcarTodos(true)}>
+          <CheckSquare /> Marcar todos
+        </button>
+        <button className="btn pequeno" onClick={() => marcarTodos(false)}>
+          <Square /> Desmarcar
+        </button>
+        {fechar && (
+          <button className="icone-btn leve" title="Fechar a prévia" onClick={fechar}>
+            <X />
+          </button>
+        )}
+      </div>
+      <div className="grade-arquivos">
+        {l.arquivos.map((a) => (
+          <MiniaturaArquivo key={a.indice} arquivo={a} marcado={l.marcados.has(a.indice)} aoClicar={() => alternar(a.indice)} />
+        ))}
+      </div>
+      {!l.fim && (
+        <div className="flex">
+          <button className="btn pequeno" disabled={l.carregando} onClick={carregarMais}>
+            {l.carregando ? <Loader2 className="girando" /> : <Download />} Carregar mais {POR_VEZ}
+          </button>
+          <span className="muted pequeno">"Baixar tudo" pega também os que ainda não apareceram.</span>
+        </div>
+      )}
+    </>
   )
 }
 

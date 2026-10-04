@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Configuracoes, Duplicado, EntradaHistorico, EntradaLog, EstadoFerramenta, ItemFila, ItemGaleria, OpcoesDownload } from '@shared/tipos'
+import type { Configuracoes, Duplicado, EntradaHistorico, EntradaLog, EstadoFerramenta, ItemFila, ItemGaleria, ItemLote, OpcoesDownload } from '@shared/tipos'
 
 export type Pagina = 'inicio' | 'downloads' | 'galeria' | 'logs' | 'dependencias' | 'configuracoes'
 
@@ -14,6 +14,8 @@ interface PedidoDuplicados {
   duplicados: Duplicado[]
   iniciar: boolean
   opcoes?: Partial<OpcoesDownload>
+  /** Lista com opções por link: "baixar de novo" usa as opções de cada um */
+  lote?: ItemLote[]
   /** URLs novas que já entraram na fila (só informativo) */
   adicionados: number
 }
@@ -69,6 +71,18 @@ export async function adicionarLinks(urls: string[], iniciar = false, opcoes?: P
     useEstado.setState({ duplicados: { urls: r.duplicados.map((d) => d.url), duplicados: r.duplicados, iniciar, opcoes, adicionados: r.adicionados } })
   } else if (r.adicionados === 0) {
     avisar('Nenhum link válido encontrado', 'erro')
+  }
+  return r.adicionados
+}
+
+/** Vários links, cada um com as suas opções (pasta, vídeos escolhidos). */
+export async function adicionarLote(lote: ItemLote[], iniciar: boolean): Promise<number> {
+  const r = await window.api.adicionarLote(lote, iniciar)
+  if (r.duplicados.length) {
+    const urls = new Set(r.duplicados.map((d) => d.url))
+    useEstado.setState({
+      duplicados: { urls: [...urls], duplicados: r.duplicados, iniciar, lote: lote.filter((l) => urls.has(l.url)), adicionados: r.adicionados }
+    })
   }
   return r.adicionados
 }
