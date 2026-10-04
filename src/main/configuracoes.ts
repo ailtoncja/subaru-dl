@@ -32,7 +32,8 @@ export function opcoesPadrao(): OpcoesDownload {
     itensPlaylist: '',
     limitePlaylist: 0,
     ordemInvertida: false,
-    pasta: null
+    pasta: null,
+    somenteInfo: null
   }
 }
 
@@ -75,7 +76,14 @@ function configuracoesPadrao(): Configuracoes {
     atualizarFerramentas: true,
     canalYtdlp: 'stable',
     atualizarApp: true,
-    guiaVisto: false
+    guiaVisto: false,
+    excluirArquivo: 'perguntar',
+    colecoesAutomaticas: true,
+    pastaGaleria: join(app.getPath('pictures'), 'Subaru DL'),
+    galeriaSimultaneos: 2,
+    galeriaPularBaixados: true,
+    galeriaIntervalo: '',
+    galeriaPausa: 0
   }
 }
 

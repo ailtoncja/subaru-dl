@@ -28,7 +28,7 @@ import { bytes, duracao, velocidade } from '@shared/formatar'
 import { estimarTamanho, QUALIDADES } from '@shared/formatos'
 import type { ItemFila as TItem, StatusItem } from '@shared/tipos'
 import { Dialogo } from '../componentes/ui'
-import { avisar } from '../estado'
+import { avisar, useEstado } from '../estado'
 import PreferenciasItem from './PreferenciasItem'
 
 const NOMES_STATUS: Record<StatusItem, string> = {
@@ -64,6 +64,7 @@ function IconeStatus({ status }: { status: StatusItem }) {
 
 function resumoOpcoes(item: TItem): string {
   const o = item.opcoes
+  if (o.somenteInfo) return 'Só informações'
   if (o.modo === 'audio') {
     if (o.manterOriginal) return 'Áudio original'
     return `${o.formatoAudio.toUpperCase()}${o.bitrateAudio ? ` ${o.bitrateAudio}k` : ''}`
@@ -86,6 +87,8 @@ export default function ItemFila({ item }: { item: TItem }) {
   const estimado = estimarTamanho(info, item.opcoes)
   const arquivo = item.arquivos[item.arquivos.length - 1]
   const playlist = info?.playlist
+  const config = useEstado((e) => e.config)!
+  const pastaDoItem = item.opcoes.pasta ?? (item.opcoes.modo === 'audio' ? config.pastaAudio : config.pastaVideo)
 
   const detalheProgresso = () => {
     if (item.status === 'baixando') {
@@ -192,6 +195,11 @@ export default function ItemFila({ item }: { item: TItem }) {
               <RotateCw />
             </button>
           )}
+          {item.status === 'concluido' && !arquivo && (
+            <button className="icone-btn amarelo" title="Abrir a pasta" onClick={() => api.abrirPasta(pastaDoItem)}>
+              <FolderOpen />
+            </button>
+          )}
           {item.status === 'concluido' && arquivo && (
             <>
               <button className="icone-btn amarelo" title="Abrir o arquivo" onClick={() => api.abrirArquivo(arquivo)}>
@@ -202,9 +210,11 @@ export default function ItemFila({ item }: { item: TItem }) {
               </button>
             </>
           )}
-          <button className={`icone-btn${aberto ? ' amarelo' : ''}`} title="Preferências deste item" onClick={() => setAberto(!aberto)}>
-            <Settings2 />
-          </button>
+          {!item.opcoes.somenteInfo && (
+            <button className={`icone-btn${aberto ? ' amarelo' : ''}`} title="Preferências deste item" onClick={() => setAberto(!aberto)}>
+              <Settings2 />
+            </button>
+          )}
           <MenuItem item={item} aberto={menu} setAberto={setMenu} aoRenomear={() => setRenomeando(true)} />
         </div>
       </div>

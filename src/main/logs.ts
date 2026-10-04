@@ -12,7 +12,9 @@ export function aoLogar(cb: (e: EntradaLog) => void): void {
 }
 
 export function logar(nivel: NivelLog, texto: string, itemId: string | null = null): void {
-  const entrada: EntradaLog = { id: proximoId++, hora: Date.now(), nivel, itemId, texto }
+  // Algumas ferramentas (ex.: deno upgrade) mandam cores mesmo com NO_COLOR
+  const limpo = texto.replace(/\x1b\[[0-9;]*m/g, '')
+  const entrada: EntradaLog = { id: proximoId++, hora: Date.now(), nivel, itemId, texto: limpo }
   entradas.push(entrada)
   if (entradas.length > MAXIMO) entradas.splice(0, entradas.length - MAXIMO)
   ouvinte?.(entrada)

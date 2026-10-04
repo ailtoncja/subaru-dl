@@ -1,7 +1,7 @@
 import { create } from 'zustand'
-import type { Configuracoes, Duplicado, EntradaLog, EstadoFerramenta, ItemFila } from '@shared/tipos'
+import type { Biblioteca, Configuracoes, Duplicado, EntradaLog, EstadoFerramenta, ItemFila, ItemGaleria } from '@shared/tipos'
 
-export type Pagina = 'downloads' | 'busca' | 'logs' | 'dependencias' | 'configuracoes'
+export type Pagina = 'downloads' | 'busca' | 'biblioteca' | 'galeria' | 'dados' | 'logs' | 'dependencias' | 'configuracoes'
 
 export interface Toast {
   id: number
@@ -20,6 +20,8 @@ interface PedidoDuplicados {
 interface Estado {
   pagina: Pagina
   fila: ItemFila[]
+  biblioteca: Biblioteca
+  galeria: ItemGaleria[]
   config: Configuracoes | null
   logs: EntradaLog[]
   ferramentas: EstadoFerramenta[]
@@ -32,6 +34,8 @@ interface Estado {
 export const useEstado = create<Estado>((set) => ({
   pagina: 'downloads',
   fila: [],
+  biblioteca: { itens: [], colecoes: [] },
+  galeria: [],
   config: null,
   logs: [],
   ferramentas: [],
@@ -66,10 +70,18 @@ export async function adicionarLinks(urls: string[], iniciar = false, opcoes?: P
 
 export async function iniciarEstado(): Promise<void> {
   const api = window.api
-  const [fila, config, logs] = await Promise.all([api.obterFila(), api.obterConfiguracoes(), api.obterLogs()])
-  useEstado.setState({ fila, config, logs })
+  const [fila, config, logs, biblioteca, galeria] = await Promise.all([
+    api.obterFila(),
+    api.obterConfiguracoes(),
+    api.obterLogs(),
+    api.obterBiblioteca(),
+    api.obterGaleria()
+  ])
+  useEstado.setState({ fila, config, logs, biblioteca, galeria })
 
   api.aoMudarFila((fila) => useEstado.setState({ fila }))
+  api.aoMudarBiblioteca((biblioteca) => useEstado.setState({ biblioteca }))
+  api.aoMudarGaleria((galeria) => useEstado.setState({ galeria }))
   api.aoNovoLog((entrada) =>
     useEstado.setState((s) => ({ logs: s.logs.length > 3000 ? [...s.logs.slice(-2500), entrada] : [...s.logs, entrada] }))
   )

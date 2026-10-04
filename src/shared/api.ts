@@ -1,10 +1,17 @@
 import type {
+  Biblioteca,
+  CampoDados,
+  Colecao,
   Configuracoes,
   Duplicado,
   EntradaLog,
   EstadoFerramenta,
   FiltrosBusca,
+  FonteDados,
+  FormatoExportacao,
   ItemFila,
+  ItemGaleria,
+  LinhaDados,
   NomeFerramenta,
   OpcoesDownload,
   ResultadoBusca,
@@ -29,8 +36,33 @@ export interface ApiSubaru {
   dividirPlaylist(id: string): Promise<void>
   obterFila(): Promise<ItemFila[]>
 
+  // Biblioteca (fase 2)
+  obterBiblioteca(): Promise<Biblioteca>
+  etiquetar(id: string, tags: string[], colecoes: string[]): Promise<void>
+  renomearNaBiblioteca(id: string, novoNome: string): Promise<{ ok: boolean; erro?: string }>
+  excluirDaBiblioteca(ids: string[], apagarArquivos: boolean): Promise<number>
+  removerSemArquivo(): Promise<number>
+  criarColecao(nome: string): Promise<Colecao>
+  renomearColecao(id: string, nome: string): Promise<void>
+  excluirColecao(id: string): Promise<void>
+  duracaoNaBiblioteca(id: string): Promise<number | null>
+  dividirArquivo(id: string, cortes: number[], apagarOriginal: boolean): Promise<{ ok: boolean; partes?: number; erro?: string }>
+
+  // Dados (fase 2)
+  lerDados(fonte: FonteDados, entrada: string, limite: number, detalhado: boolean): Promise<LinhaDados[]>
+  exportarDados(linhas: LinhaDados[], campos: CampoDados[], formato: FormatoExportacao): Promise<string | null>
+
+  // Galeria (fase 3)
+  obterGaleria(): Promise<ItemGaleria[]>
+  adicionarGaleria(urls: string[]): Promise<number>
+  pausarGaleria(id: string): Promise<void>
+  retomarGaleria(id: string): Promise<void>
+  removerGaleria(ids: string[]): Promise<void>
+  limparGaleriaConcluidos(): Promise<void>
+
   // Arquivos
   abrirArquivo(caminho: string): Promise<void>
+  abrirPasta(caminho: string): Promise<void>
   mostrarNaPasta(caminho: string): Promise<void>
   renomear(id: string, novoNome: string): Promise<{ ok: boolean; erro?: string }>
   escolherPasta(atual?: string): Promise<string | null>
@@ -71,6 +103,9 @@ export interface ApiSubaru {
   aoLinkCopiado(cb: (url: string) => void): () => void
   aoDuplicados(cb: (urls: string[], duplicados: Duplicado[], iniciar: boolean) => void): () => void
   aoNavegar(cb: (pagina: string) => void): () => void
+  aoMudarBiblioteca(cb: (b: Biblioteca) => void): () => void
+  aoProgressoDados(cb: (lidos: number) => void): () => void
+  aoMudarGaleria(cb: (itens: ItemGaleria[]) => void): () => void
 }
 
 /** Canais IPC: nome do método → canal. Eventos usam o prefixo "evt:". */
@@ -89,7 +124,26 @@ export const CANAIS_INVOKE = [
   'mover',
   'dividirPlaylist',
   'obterFila',
+  'obterBiblioteca',
+  'etiquetar',
+  'renomearNaBiblioteca',
+  'excluirDaBiblioteca',
+  'removerSemArquivo',
+  'criarColecao',
+  'renomearColecao',
+  'excluirColecao',
+  'duracaoNaBiblioteca',
+  'dividirArquivo',
+  'lerDados',
+  'exportarDados',
+  'obterGaleria',
+  'adicionarGaleria',
+  'pausarGaleria',
+  'retomarGaleria',
+  'removerGaleria',
+  'limparGaleriaConcluidos',
   'abrirArquivo',
+  'abrirPasta',
   'mostrarNaPasta',
   'renomear',
   'escolherPasta',
@@ -120,5 +174,8 @@ export const EVENTOS = {
   aoMudarFerramentas: 'evt:ferramentas',
   aoLinkCopiado: 'evt:link-copiado',
   aoDuplicados: 'evt:duplicados',
-  aoNavegar: 'evt:navegar'
+  aoNavegar: 'evt:navegar',
+  aoMudarBiblioteca: 'evt:biblioteca',
+  aoProgressoDados: 'evt:dados-progresso',
+  aoMudarGaleria: 'evt:galeria'
 } as const satisfies Partial<Record<keyof ApiSubaru, string>>

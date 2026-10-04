@@ -427,7 +427,7 @@ label.linha:hover { background: rgb(255 255 255 / 0.02); }
 .tabela-formatos tr.selecionavel-linha { cursor: pointer; }
 .tabela-formatos tr.selecionavel-linha:hover td { background: var(--surface); }
 .tabela-formatos tr.escolhido td { background: rgb(47 107 240 / 0.18); }
-.rolagem { max-height: 280px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
+.rolagem { max-height: 280px; overflow: auto; border: 1px solid var(--border); border-radius: 8px; }
 
 .lista-check { max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
 .lista-check label { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-top: 1px solid rgb(34 52 110 / 0.5); cursor: pointer; font-size: 13px; }
@@ -514,6 +514,11 @@ input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent-f
 .config .indice { position: sticky; top: 0; width: 190px; flex: none; display: flex; flex-direction: column; gap: 2px; }
 .config .indice button { padding: 6px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); text-align: left; cursor: pointer; font-size: 13px; }
 .config .indice button:hover { background: var(--surface); color: var(--text); }
+.config .indice button.ativo-indice { background: var(--surface); color: var(--text); box-shadow: inset 3px 0 0 var(--yellow); }
+
+.caixa-busca { display: flex; align-items: center; gap: 8px; min-width: 200px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.caixa-busca:focus-within { border-color: var(--accent-forte); }
+.caixa-busca input { flex: 1; min-width: 0; padding: 7px 0; border: 0; background: transparent; outline: none; }
 .config .secoes { flex: 1; min-width: 0; }
 .destaque { background: rgb(255 210 0 / 0.14); border-radius: 3px; color: var(--yellow); }
 

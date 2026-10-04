@@ -4,13 +4,13 @@ import { execFile, type ChildProcess } from 'node:child_process'
 import { existsSync, renameSync } from 'node:fs'
 import { basename, dirname, extname, join } from 'node:path'
 import { createInterface } from 'node:readline'
-import type { Duplicado, ItemFila, OpcoesDownload, Progresso, StatusItem } from '@shared/tipos'
+import type { Duplicado, ItemFila, MidiaBaixada, OpcoesDownload, Progresso, StatusItem } from '@shared/tipos'
 import { gravadorAdiado, lerJson } from './armazenamento'
 import { configuracoes, obterSegredos } from './configuracoes'
 import { executar } from './ferramentas'
-import { procurarDuplicados, registrarDownload } from './historico'
+import { procurarDuplicados, registrarDownload } from './biblioteca'
 import { dicaParaErro, logar } from './logs'
-import { argsDownload, buscarInfo, comandoParaLog, MARCA_ARQUIVO, MARCA_POS, MARCA_PROGRESSO } from './ytdlp'
+import { argsDownload, buscarInfo, comandoParaLog, MARCA_ARQUIVO, MARCA_POS, MARCA_PROGRESSO, nomeSite } from './ytdlp'
 
 const PROGRESSO_ZERO: Progresso = {
   porcentagem: 0,
@@ -97,7 +97,7 @@ export function carregarFila(): void {
     // O que estava em andamento quando o app fechou volta pausado (o yt-dlp continua de onde parou)
     const interrompido: StatusItem[] = ['baixando', 'processando', 'aguardando-nova-tentativa']
     const status: StatusItem = interrompido.includes(i.status) ? 'pausado' : i.status === 'buscando' ? 'buscando' : i.status
-    return { ...i, status, proximaTentativaEm: null, progresso: { ...i.progresso, velocidade: null, eta: null } }
+    return { ...i, midias: i.midias ?? [], status, proximaTentativaEm: null, progresso: { ...i.progresso, velocidade: null, eta: null } }
   })
   proximoId = itens.reduce((max, i) => Math.max(max, Number(i.id.replace(/\D/g, '')) || 0), 0) + 1
   for (const i of itens) if (i.status === 'buscando') buscarProximasInfos()
@@ -120,6 +120,7 @@ function novoItem(url: string, opcoes?: Partial<OpcoesDownload>): ItemFila {
     opcoes: { ...structuredClone(padrao), ...opcoes },
     progresso: { ...PROGRESSO_ZERO },
     arquivos: [],
+    midias: [],
     erro: null,
     dicaErro: null,
     tentativa: 0,
@@ -151,7 +152,8 @@ export function adicionar(
   let lista = normalizarUrls(urls)
   const duplicados: Duplicado[] = []
   const acao = configuracoes().acaoDuplicado
-  if (!ignorarDuplicados && acao !== 'permitir') {
+  // Baixar só as informações de algo já baixado é normal: não conta como duplicado
+  if (!ignorarDuplicados && acao !== 'permitir' && !opcoes?.somenteInfo) {
     const achados = procurarDuplicados(lista)
     if (achados.size) {
       lista = lista.filter((u) => !achados.has(u))
@@ -257,7 +259,8 @@ function iniciarDownload(id: string) {
     erro: null,
     dicaErro: null,
     arquivos: ehPlaylist ? alvo.arquivos : [],
-    progresso: { ...PROGRESSO_ZERO, etapa: 'Iniciando' }
+    midias: ehPlaylist ? alvo.midias : [],
+    progresso: { ...PROGRESSO_ZERO, etapa: alvo.opcoes.somenteInfo ? 'Baixando informações' : 'Iniciando' }
   })
 
   const proc = executar('yt-dlp.exe', args)
@@ -269,9 +272,11 @@ function iniciarDownload(id: string) {
     if (linha.startsWith(MARCA_PROGRESSO)) return lerProgresso(id, linha.slice(MARCA_PROGRESSO.length))
     if (linha.startsWith(MARCA_POS)) return lerPosProcesso(id, linha.slice(MARCA_POS.length))
     if (linha.startsWith(MARCA_ARQUIVO)) {
-      const arquivo = linha.slice(MARCA_ARQUIVO.length).trim()
+      const midia = lerMidia(linha.slice(MARCA_ARQUIVO.length))
       const atual = item(id)
-      if (atual && !atual.arquivos.includes(arquivo)) definir(id, { arquivos: [...atual.arquivos, arquivo] })
+      if (midia && atual && !atual.arquivos.includes(midia.arquivo)) {
+        definir(id, { arquivos: [...atual.arquivos, midia.arquivo], midias: [...atual.midias, midia] })
+      }
       return
     }
     if (linha.trim()) logar('info', linha, id)
@@ -303,7 +308,7 @@ function iniciarDownload(id: string) {
         concluidoEm: Date.now(),
         progresso: { ...atual.progresso, porcentagem: 100, etapa: null, velocidade: null, eta: null }
       }
-      if (!atual.arquivos.length && avisos.length) {
+      if (!atual.arquivos.length && avisos.length && !atual.opcoes.somenteInfo) {
         // Terminou sem baixar nada (ex.: tudo filtrado pelos filtros de entrada)
         concluido.erro = 'Nada foi baixado. Veja os avisos nos logs.'
       }
@@ -353,6 +358,34 @@ function falhou(id: string, mensagem: string) {
     )
   } else {
     definir(id, { status: 'erro', erro: mensagem, dicaErro: dica, proximaTentativaEm: null })
+  }
+}
+
+/** Dados de um arquivo terminado, impressos pelo yt-dlp em JSON (veja argsDownload). */
+function lerMidia(json: string): MidiaBaixada | null {
+  try {
+    const d = JSON.parse(json)
+    if (!d.filepath) return null
+    return {
+      idMidia: String(d.id ?? ''),
+      titulo: d.title ?? '',
+      canal: d.channel ?? d.uploader ?? null,
+      site: nomeSite(d.extractor_key ?? ''),
+      url: d.webpage_url ?? '',
+      duracao: d.duration ?? null,
+      altura: d.height ?? null,
+      fps: d.fps ?? null,
+      abr: d.abr ?? null,
+      ext: d.ext ?? '',
+      arquivo: d.filepath,
+      miniatura: d.thumbnail ?? null,
+      dataUpload: d.upload_date ?? null,
+      playlist: d.playlist_title ?? null,
+      views: d.view_count ?? null,
+      likes: d.like_count ?? null
+    }
+  } catch {
+    return null
   }
 }
 

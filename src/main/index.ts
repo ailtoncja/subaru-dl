@@ -1,13 +1,15 @@
 import { app, BrowserWindow, clipboard, dialog, ipcMain, shell } from 'electron'
 import { autoUpdater } from 'electron-updater'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import type { ApiSubaru } from '@shared/api'
 import { EVENTOS } from '@shared/api'
+import * as biblioteca from './biblioteca'
 import * as cfg from './configuracoes'
+import * as dados from './dados'
+import * as galeria from './galeria'
 import * as ferramentas from './ferramentas'
 import * as fila from './fila'
-import { salvarHistoricoAgora } from './historico'
 import * as logs from './logs'
 import * as sistema from './sistema'
 import { buscarNoYoutube } from './ytdlp'
@@ -94,13 +96,49 @@ const handlers: Handlers = {
   dividirPlaylist: async (id) => fila.dividirPlaylist(id),
   obterFila: async () => fila.fila(),
 
+  obterBiblioteca: async () => biblioteca.listarBiblioteca(),
+  etiquetar: async (id, tags, colecoes) => biblioteca.etiquetar(id, tags, colecoes),
+  renomearNaBiblioteca: async (id, nome) => biblioteca.renomearNaBiblioteca(id, nome),
+  excluirDaBiblioteca: async (ids, apagar) => biblioteca.excluirDaBiblioteca(ids, apagar),
+  removerSemArquivo: async () => biblioteca.removerSemArquivo(),
+  criarColecao: async (nome) => biblioteca.criarColecao(nome),
+  renomearColecao: async (id, nome) => biblioteca.renomearColecao(id, nome),
+  excluirColecao: async (id) => biblioteca.excluirColecao(id),
+  duracaoNaBiblioteca: async (id) => biblioteca.duracaoNaBiblioteca(id),
+  dividirArquivo: async (id, cortes, apagar) => biblioteca.dividirArquivo(id, cortes, apagar),
+
+  lerDados: async (fonte, entrada, limite, detalhado) =>
+    dados.lerDados(fonte, entrada, limite, detalhado, cfg.configuracoes(), cfg.obterSegredos(), (n) => enviar(EVENTOS.aoProgressoDados, n)),
+  exportarDados: async (linhas, campos, formato) => {
+    const r = await dialog.showSaveDialog(janela!, {
+      defaultPath: `subaru-dl-dados-${new Date().toISOString().slice(0, 10)}.${formato}`,
+      filters: [{ name: formato.toUpperCase(), extensions: [formato] }]
+    })
+    if (r.canceled || !r.filePath) return null
+    dados.salvarExportacao(r.filePath, dados.gerarExportacao(linhas, campos, formato))
+    logs.logar('info', `Dados exportados: ${r.filePath}`)
+    return r.filePath
+  },
+
+  obterGaleria: async () => galeria.listarGaleria(),
+  adicionarGaleria: async (urls) => galeria.adicionarGaleria(urls),
+  pausarGaleria: async (id) => galeria.pausarGaleria(id),
+  retomarGaleria: async (id) => galeria.retomarGaleria(id),
+  removerGaleria: async (ids) => galeria.removerGaleria(ids),
+  limparGaleriaConcluidos: async () => galeria.limparGaleriaConcluidos(),
+
+  abrirPasta: async (caminho) => {
+    mkdirSync(caminho, { recursive: true })
+    const erro = await shell.openPath(caminho)
+    if (erro) logs.logar('erro', `Não foi possível abrir ${caminho}: ${erro}`)
+  },
   abrirArquivo: async (caminho) => {
     const erro = await shell.openPath(caminho)
     if (erro) logs.logar('erro', `Não foi possível abrir ${caminho}: ${erro}`)
   },
   mostrarNaPasta: async (caminho) => {
-    if (existsSync(caminho)) shell.showItemInFolder(caminho)
-    else void shell.openPath(caminho)
+    if (existsSync(caminho) && !statSync(caminho).isDirectory()) shell.showItemInFolder(caminho)
+    else void shell.openPath(existsSync(caminho) ? caminho : dirname(caminho))
   },
   renomear: async (id, nome) => fila.renomear(id, nome),
   escolherPasta: async (atual) => {
@@ -242,10 +280,13 @@ app.whenReady().then(() => {
   logs.aoLogar((e) => enviar(EVENTOS.aoNovoLog, e))
   fila.aoMudarFila((f) => enviar(EVENTOS.aoMudarFila, f))
   ferramentas.aoMudarFerramentas((f) => enviar(EVENTOS.aoMudarFerramentas, f))
+  biblioteca.aoMudarBiblioteca((b) => enviar(EVENTOS.aoMudarBiblioteca, b))
+  galeria.aoMudarGaleria((g) => enviar(EVENTOS.aoMudarGaleria, g))
   cfg.aoMudarConfiguracoes(() => aplicarConfiguracoesDeSistema())
 
   registrarIpc()
   fila.carregarFila()
+  galeria.carregarGaleria()
   criarJanela()
   aplicarConfiguracoesDeSistema()
 
@@ -263,7 +304,8 @@ app.whenReady().then(() => {
 app.on('before-quit', () => {
   saindo = true
   fila.encerrarTudo()
-  salvarHistoricoAgora()
+  galeria.encerrarGaleria()
+  biblioteca.salvarBibliotecaAgora()
 })
 
 app.on('window-all-closed', () => {

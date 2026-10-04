@@ -205,11 +205,35 @@ function modeloSaida(c: Configuracoes, o: OpcoesDownload, ehPlaylist: boolean): 
 
 // ---------- Download completo ----------
 
+/** Só as informações, sem o vídeo (item 72). */
+function argsSomenteInfo(item: ItemFila, c: Configuracoes, s: Segredos, pasta: string): string[] {
+  const i = item.opcoes.somenteInfo!
+  const ehPlaylist = !!item.info?.playlist
+  const a = [...argsBase(c), '--no-quiet', '--skip-download', '-P', `home:${pasta}`, '-o', modeloSaida(c, item.opcoes, ehPlaylist)]
+  if (i.json || i.comentarios) a.push('--write-info-json')
+  if (i.comentarios) a.push('--write-comments')
+  if (i.descricao) a.push('--write-description')
+  if (i.miniatura) a.push('--write-thumbnail', '--convert-thumbnails', 'jpg')
+  if (i.legendas) {
+    a.push('--write-subs', '--write-auto-subs', '--sub-langs', i.idiomasLegenda.length ? i.idiomasLegenda.join(',') : 'all,-live_chat')
+  }
+  if (c.nomesSeguros) a.push('--restrict-filenames')
+  if (ehPlaylist && item.opcoes.itensPlaylist.trim()) a.push('-I', item.opcoes.itensPlaylist.trim())
+  a.push(...argsRede(c, s, item.url), '--', item.url)
+  return a
+}
+
+export function pastaDoItem(item: ItemFila, c: Configuracoes): string {
+  const o = item.opcoes
+  return o.pasta ?? (o.modo === 'audio' ? c.pastaAudio : c.pastaVideo)
+}
+
 export function argsDownload(item: ItemFila, c: Configuracoes, s: Segredos): string[] {
   const o = item.opcoes
   const info = item.info
   const ehPlaylist = !!info?.playlist
-  const pasta = o.pasta ?? (o.modo === 'audio' ? c.pastaAudio : c.pastaVideo)
+  const pasta = pastaDoItem(item, c)
+  if (o.somenteInfo) return argsSomenteInfo(item, c, s, pasta)
   const a: string[] = [
     ...argsBase(c),
     '--newline',
@@ -221,7 +245,7 @@ export function argsDownload(item: ItemFila, c: Configuracoes, s: Segredos): str
     '--progress-template',
     `postprocess:${MARCA_POS}%(progress.status)s|%(progress.postprocessor)s|%(info.playlist_index)s`,
     '--print',
-    `after_move:${MARCA_ARQUIVO}%(filepath)s`,
+    `after_move:${MARCA_ARQUIVO}%(.{id,title,channel,uploader,extractor_key,webpage_url,duration,height,fps,abr,ext,filepath,thumbnail,upload_date,playlist_title,view_count,like_count})j`,
     '-P',
     `home:${pasta}`,
     '-o',
@@ -355,7 +379,7 @@ function lerFormato(f: any): Formato {
 }
 
 /** "YoutubeTab" → "YouTube", "TwitchVod" → "Twitch"… */
-function nomeSite(chave: string): string {
+export function nomeSite(chave: string): string {
   const base = chave.replace(/(Tab|Playlist|Vod|Clips?|Live|User|Channel|Post|Video|Search(URL)?)$/i, '') || chave
   const NOMES: Record<string, string> = { youtube: 'YouTube', tiktok: 'TikTok', twitch: 'Twitch', instagram: 'Instagram', twitter: 'X/Twitter', facebook: 'Facebook', vimeo: 'Vimeo', soundcloud: 'SoundCloud', reddit: 'Reddit', kick: 'Kick', bilibili: 'Bilibili', dailymotion: 'Dailymotion' }
   return NOMES[base.toLowerCase()] ?? base
