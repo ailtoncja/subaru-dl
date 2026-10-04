@@ -6,6 +6,7 @@ import {
   Clock,
   Download,
   Eye,
+  FileText,
   FolderOpen,
   Images,
   Info,
@@ -20,7 +21,7 @@ import {
   X,
   XCircle
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type DragEvent } from 'react'
 import { tempoRelativo } from '@shared/formatar'
 import type { ArquivoGaleria, ItemGaleria, OrganizarGaleria, StatusGaleria } from '@shared/tipos'
 import { pastaCurta } from '../componentes/Destino'
@@ -55,8 +56,39 @@ export default function Galeria() {
   const [previa, setPrevia] = useState<Previa | null>(null)
   const [lendo, setLendo] = useState(false)
   const [erro, setErro] = useState('')
+  const [arrastando, setArrastando] = useState(false)
   const links = [...new Set(extrairLinks(texto))]
   const destino = pasta ?? c.pastaGaleria
+
+  /** Junta links novos aos que já estão no campo (sem repetir). */
+  const acrescentar = (novos: string[]) => {
+    setPrevia(null)
+    setTexto((atual) => [...new Set([...extrairLinks(atual), ...novos])].join('\n'))
+  }
+
+  const colar = async () => {
+    const achados = extrairLinks(await window.api.lerClipboard())
+    if (achados.length) acrescentar(achados)
+    else avisar('Nenhum link na área de transferência', 'erro')
+  }
+
+  const importar = async () => {
+    const achados = (await window.api.lerArquivoLinks()).flatMap(extrairLinks)
+    if (achados.length) acrescentar(achados)
+  }
+
+  // Arrastar links ou um .txt com links
+  const soltar = async (e: DragEvent) => {
+    e.preventDefault()
+    setArrastando(false)
+    const achados: string[] = []
+    for (const arquivo of Array.from(e.dataTransfer.files)) {
+      if (/\.(txt|csv|list)$/i.test(arquivo.name)) achados.push(...extrairLinks(await arquivo.text()))
+    }
+    achados.push(...extrairLinks(e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain')))
+    if (achados.length) acrescentar(achados)
+    else avisar('Nada para adicionar no que foi solto', 'erro')
+  }
 
   const baixar = async (lista: string[], intervalo?: string | null) => {
     if (!lista.length) return avisar('Cole pelo menos um link', 'erro')
@@ -120,9 +152,34 @@ export default function Galeria() {
         </button>
       </div>
 
-      <div className="cartao caixa-url">
+      <div
+        className="cartao caixa-url"
+        style={arrastando ? { borderColor: 'var(--amarelo)' } : undefined}
+        onDragOver={(e) => {
+          e.preventDefault()
+          setArrastando(true)
+        }}
+        onDragLeave={() => setArrastando(false)}
+        onDrop={soltar}
+      >
         {links.length > 1 || texto.includes('\n') ? (
-          <textarea className="mono" value={texto} onChange={(e) => setTexto(e.target.value)} />
+          <>
+            <div className="flex" style={{ marginBottom: 10 }}>
+              <strong className="flex-1">
+                {links.length} links <span className="muted pequeno">· um por linha, todos com as mesmas opções</span>
+              </strong>
+              <button className="btn fantasma pequeno" onClick={colar}>
+                <ClipboardPaste /> Colar mais
+              </button>
+              <button className="btn fantasma pequeno" onClick={importar}>
+                <FileText /> Importar .txt
+              </button>
+              <button className="icone-btn leve" title="Limpar" onClick={() => (setTexto(''), setPrevia(null), setErro(''))}>
+                <X />
+              </button>
+            </div>
+            <textarea className="mono" value={texto} onChange={(e) => setTexto(e.target.value)} />
+          </>
         ) : (
           <div className="linha-url">
             <Link2 />
@@ -130,21 +187,25 @@ export default function Galeria() {
               value={texto}
               onChange={(e) => (setTexto(e.target.value), setPrevia(null))}
               onKeyDown={(e) => e.key === 'Enter' && verArquivos()}
-              placeholder="Cole o link de um perfil, post, álbum ou galeria"
+              onPaste={(e) => {
+                // Um campo de uma linha juntaria vários links num só: vira a lista
+                const colados = extrairLinks(e.clipboardData.getData('text'))
+                if (colados.length > 1) {
+                  e.preventDefault()
+                  acrescentar(colados)
+                }
+              }}
+              placeholder="Cole o link de um perfil, post ou álbum (ou vários, um por linha)"
             />
             {texto && (
               <button className="icone-btn leve" onClick={() => (setTexto(''), setPrevia(null), setErro(''))}>
                 <X />
               </button>
             )}
-            <button
-              className="btn"
-              onClick={async () => {
-                const achados = extrairLinks(await window.api.lerClipboard())
-                if (achados.length) setTexto(achados.join('\n'))
-                else avisar('Nenhum link na área de transferência', 'erro')
-              }}
-            >
+            <button className="icone-btn leve" title="Importar uma lista de links (.txt)" onClick={importar}>
+              <FileText />
+            </button>
+            <button className="btn" onClick={colar}>
               <ClipboardPaste className="amarelo" /> Colar
             </button>
             <button className="btn" disabled={!links.length || lendo} onClick={() => verArquivos()} title="Lista os arquivos para você escolher quais baixar">
