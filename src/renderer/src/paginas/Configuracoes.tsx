@@ -1,7 +1,7 @@
 import { FolderOpen, RefreshCw, RotateCcw, Search, X } from 'lucide-react'
 import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import type { CampoNome, Configuracoes as TConfig, Navegador, OpcoesDownload, Segredos } from '@shared/tipos'
-import { SelecaoOrganizar } from '../componentes/Destino'
+import { SelecaoOrganizar, SelecaoOrganizarGaleria } from '../componentes/Destino'
 import { EditorLegendas, EditorPosProcesso, EditorQualidade } from '../componentes/EditorOpcoes'
 import { Dialogo, Etiquetas, Interruptor, Linha, LinhaInterruptor, Selecao } from '../componentes/ui'
 import { avisar, salvarConfig, useEstado } from '../estado'
@@ -704,15 +704,11 @@ export default function Configuracoes() {
         {
           texto: 'galeria organizar subpastas site perfil mesma pasta',
           el: (
-            <Linha rotulo="Organizar a galeria">
-              <Selecao
+            <Linha rotulo="Organizar a galeria (padrão)" dica="Dá para mudar a cada download, na própria Galeria">
+              <SelecaoOrganizarGaleria
                 valor={c.galeriaOrganizar}
-                aoMudar={(galeriaOrganizar) => salvarConfig({ galeriaOrganizar })}
-                largura={240}
-                opcoes={[
-                  { valor: 'padrao', nome: 'Por site e perfil' },
-                  { valor: 'plana', nome: 'Tudo na mesma pasta' }
-                ]}
+                formato={c.galeriaFormatoPasta}
+                aoMudar={(galeriaOrganizar, galeriaFormatoPasta) => salvarConfig({ galeriaOrganizar, galeriaFormatoPasta })}
               />
             </Linha>
           )

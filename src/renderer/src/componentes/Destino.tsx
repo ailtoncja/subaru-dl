@@ -1,6 +1,6 @@
 // Onde salvar cada download e como organizar em subpastas.
 import { FolderOpen } from 'lucide-react'
-import type { Modo, OpcoesDownload, PresetSubpasta } from '@shared/tipos'
+import type { Modo, OpcoesDownload, OrganizarGaleria, PresetSubpasta } from '@shared/tipos'
 import { useEstado } from '../estado'
 
 export const OPCOES_ORGANIZAR: Array<{ valor: PresetSubpasta; nome: string; exemplo: string }> = [
@@ -70,6 +70,52 @@ export function SelecaoOrganizar({ o, mudar, compacto }: { o: OpcoesDownload; mu
           value={o.subpastaPersonalizada}
           onChange={(e) => mudar({ subpastaPersonalizada: e.target.value })}
           title="Modelo de pasta do yt-dlp, ex.: %(uploader)s/%(upload_date>%Y)s"
+        />
+      )}
+    </span>
+  )
+}
+
+export const OPCOES_ORGANIZAR_GALERIA: Array<{ valor: OrganizarGaleria; nome: string }> = [
+  { valor: 'plana', nome: 'Sem subpastas' },
+  { valor: 'site', nome: 'Por site' },
+  { valor: 'padrao', nome: 'Por site → perfil' },
+  { valor: 'personalizado', nome: 'Personalizado…' }
+]
+
+/** Organizar os arquivos da galeria em subpastas (ou não). */
+export function SelecaoOrganizarGaleria({
+  valor,
+  formato,
+  aoMudar,
+  compacto
+}: {
+  valor: OrganizarGaleria
+  formato: string
+  aoMudar: (valor: OrganizarGaleria, formato: string) => void
+  compacto?: boolean
+}) {
+  return (
+    <span className="flex" style={{ gap: 8, flexWrap: 'wrap' }}>
+      <select
+        className={compacto ? 'mono' : undefined}
+        style={compacto ? { padding: '4px 30px 4px 8px', fontSize: 12.5 } : undefined}
+        value={valor}
+        onChange={(e) => aoMudar(e.target.value as OrganizarGaleria, formato)}
+      >
+        {OPCOES_ORGANIZAR_GALERIA.map((op) => (
+          <option key={op.valor} value={op.valor}>
+            {compacto ? `Organizar: ${op.nome}` : op.nome}
+          </option>
+        ))}
+      </select>
+      {valor === 'personalizado' && (
+        <input
+          className="campo mono"
+          style={{ width: 200, fontSize: 12.5, padding: '4px 8px' }}
+          value={formato}
+          onChange={(e) => aoMudar(valor, e.target.value)}
+          title="Pastas separadas por /. Ex.: {category}/{user} (site/perfil) ou {user}"
         />
       )}
     </span>

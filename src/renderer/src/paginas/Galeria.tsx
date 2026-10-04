@@ -24,7 +24,7 @@ import {
 import { useState, type DragEvent } from 'react'
 import { tempoRelativo } from '@shared/formatar'
 import type { ArquivoGaleria, ItemGaleria, OrganizarGaleria, StatusGaleria } from '@shared/tipos'
-import { pastaCurta } from '../componentes/Destino'
+import { pastaCurta, SelecaoOrganizarGaleria } from '../componentes/Destino'
 import { juntarLinks, ListaLinks, type LinhaLink } from '../componentes/ListaLinks'
 import { compactar } from '../componentes/OpcoesAvancadas'
 import { avisar, extrairLinks, salvarConfig, useEstado } from '../estado'
@@ -80,6 +80,7 @@ export default function Galeria() {
   // Pasta e organização comuns (null = as das configurações)
   const [pasta, setPasta] = useState<string | null>(null)
   const [organizar, setOrganizar] = useState<OrganizarGaleria>(c.galeriaOrganizar)
+  const [formatoPasta, setFormatoPasta] = useState(c.galeriaFormatoPasta)
   // Um link: prévia única. Vários: lista com pasta e prévia por link.
   const [previa, setPrevia] = useState<Listagem | null>(null)
   const [linhas, setLinhas] = useState<LinhaGaleria[] | null>(null)
@@ -138,7 +139,7 @@ export default function Galeria() {
 
   const baixarUm = async (intervalo: string | null) => {
     if (!link) return avisar('Cole um link', 'erro')
-    const n = await window.api.adicionarGaleria([link], pasta, organizar, intervalo)
+    const n = await window.api.adicionarGaleria([link], pasta, organizar, intervalo, formatoPasta)
     if (n) {
       setTexto('')
       setPrevia(null)
@@ -167,7 +168,7 @@ export default function Galeria() {
     const vazias = linhas.filter((l) => l.lido && !l.marcados.size)
     if (vazias.length) return avisar(`${vazias.length} link(s) sem nenhum arquivo marcado`, 'erro')
     let n = 0
-    for (const l of linhas) n += await window.api.adicionarGaleria([l.url], l.pasta ?? pasta, organizar, intervaloDe(l))
+    for (const l of linhas) n += await window.api.adicionarGaleria([l.url], l.pasta ?? pasta, organizar, intervaloDe(l), formatoPasta)
     setLinhas(null)
     avisar(`${n} link(s) na fila`)
   }
@@ -284,10 +285,15 @@ export default function Galeria() {
               </button>
             )}
           </span>
-          <select className="mono" style={{ padding: '4px 30px 4px 8px', fontSize: 12.5 }} value={organizar} onChange={(e) => setOrganizar(e.target.value as OrganizarGaleria)}>
-            <option value="padrao">Organizar: por site e perfil</option>
-            <option value="plana">Organizar: tudo na mesma pasta</option>
-          </select>
+          <SelecaoOrganizarGaleria
+            valor={organizar}
+            formato={formatoPasta}
+            compacto
+            aoMudar={(v, f) => {
+              setOrganizar(v)
+              setFormatoPasta(f)
+            }}
+          />
           <label className="flex" style={{ gap: 8, cursor: 'pointer' }} title="Lembra cada arquivo baixado e não baixa de novo">
             <input type="checkbox" checked={c.galeriaPularBaixados} onChange={(e) => salvarConfig({ galeriaPularBaixados: e.target.checked })} />
             Pular o que já baixei
@@ -479,7 +485,7 @@ function ItemDaGaleria({ item }: { item: ItemGaleria }) {
               {item.concluidoEm && ` · ${tempoRelativo(item.concluidoEm)}`}
               {' · '}
               {pastaCurta(item.pasta)}
-              {item.organizar === 'plana' ? ' (sem subpastas)' : ''}
+              {item.organizar === 'plana' ? ' (sem subpastas)' : item.organizar === 'site' ? ' (por site)' : item.organizar === 'personalizado' ? ` (${item.formatoPasta})` : ''}
               {item.intervalo ? ` · arquivos ${item.intervalo}` : ''}
             </span>
           </div>
