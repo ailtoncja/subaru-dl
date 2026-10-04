@@ -522,3 +522,7 @@ label.linha { cursor: pointer; }
 .grade-videos .num { position: absolute; right: 6px; top: 6px; width: auto; padding: 0 6px; border-radius: 5px; background: rgb(0 0 0 / 0.75); color: var(--texto); font: 600 11px/1.6 var(--mono); }
 .grade-videos .dur { position: absolute; right: 6px; bottom: 6px; padding: 0 6px; border-radius: 5px; background: rgb(0 0 0 / 0.75); font: 600 11px/1.6 var(--mono); }
 .grade-videos .titulo { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; padding: 0 4px; font-size: 12.5px; line-height: 1.3; }
+
+.previa .opcoes select.legenda { grid-column: 1 / -1; }
+.previa .opcoes select.legenda.com-modo { grid-column: 1 / 3; }
+.previa .opcoes .legenda-simples { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13.5px; cursor: pointer; }

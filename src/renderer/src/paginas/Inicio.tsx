@@ -25,6 +25,7 @@ import { bytes, duracao, faixasParaEscolher, numeroCurto, tempoRelativo, velocid
 import { estimarTamanho, FORMATOS_AUDIO, BITRATES, QUALIDADES } from '@shared/formatos'
 import type { Duplicado, InfoMidia, ItemLote, OpcoesDownload } from '@shared/tipos'
 import { CampoLinks } from '../componentes/CampoLinks'
+import { SelecaoLegenda } from '../componentes/SelecaoLegenda'
 import { CampoPasta, SelecaoOrganizar } from '../componentes/Destino'
 import OpcoesAvancadas, { expandir, ListaPlaylist } from '../componentes/OpcoesAvancadas'
 import { adicionarLote, avisar, extrairLinks, useEstado } from '../estado'
@@ -315,9 +316,7 @@ function CartaoPrevia({
 }) {
   const { info, duplicado } = previa
   const pl = info.playlist
-  const config = useEstado((s) => s.config)!
   const maior = Math.max(0, ...info.formatos.map((f) => f.altura ?? 0))
-  const idiomaLegenda = (config.padrao.legendas.idiomas[0] ?? 'pt').toUpperCase()
 
   // Qualidades que existem de verdade, com o tamanho estimado de cada uma
   const qualidades = useMemo(() => {
@@ -433,6 +432,7 @@ function CartaoPrevia({
               ))}
             </select>
           )}
+          {o.modo === 'video' && <SelecaoLegenda info={info} o={o} mudar={mudar} />}
         </div>
 
         {pl && (
@@ -449,16 +449,6 @@ function CartaoPrevia({
         <div className="rodape-previa">
           <CampoPasta pasta={o.pasta} modo={o.modo} aoMudar={(pasta) => mudar({ pasta })} />
           <SelecaoOrganizar o={o} mudar={mudar} compacto />
-          {o.modo === 'video' && (
-            <label>
-              <input
-                type="checkbox"
-                checked={o.legendas.ativas}
-                onChange={(e) => mudar({ legendas: { ...o.legendas, ativas: e.target.checked } })}
-              />
-              Legendas {idiomaLegenda}
-            </label>
-          )}
           <button className="link-amarelo mono pequeno" onClick={abrirAvancado}>
             <SlidersHorizontal /> Opções avançadas
           </button>
@@ -624,8 +614,12 @@ function CartaoLote({ linhas, setLinhas, fechar }: { linhas: LinhaVideo[]; setLi
           <SelecaoOrganizar o={o} mudar={mudar} compacto />
           {o.modo === 'video' && (
             <label>
-              <input type="checkbox" checked={o.legendas.ativas} onChange={(e) => mudar({ legendas: { ...o.legendas, ativas: e.target.checked } })} />
-              Legendas {(config.padrao.legendas.idiomas[0] ?? 'pt').toUpperCase()}
+              <input
+                type="checkbox"
+                checked={o.legendas.ativas}
+                onChange={(e) => mudar({ legendas: { ...o.legendas, ativas: e.target.checked, automaticas: e.target.checked ? true : o.legendas.automaticas } })}
+              />
+              Legendas {(config.padrao.legendas.idiomas[0] ?? 'pt').toUpperCase()} (ou automática)
             </label>
           )}
           <button className="link-amarelo mono pequeno" onClick={() => setAvancado(true)}>
