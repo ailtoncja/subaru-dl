@@ -105,6 +105,8 @@ export interface EntradaPlaylist {
   titulo: string
   duracao: number | null
   url: string
+  /** Capa do vídeo (pode faltar em listas antigas) */
+  miniatura?: string | null
 }
 
 export interface InfoMidia {

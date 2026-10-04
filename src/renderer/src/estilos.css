@@ -502,3 +502,22 @@ label.linha { cursor: pointer; }
 .mosaico.qtd-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
 .mosaico .baixando { position: absolute; inset: 0; display: grid; place-items: center; background: rgb(0 0 0 / 0.35); color: #fff; }
 .mosaico .baixando svg { width: 22px; height: 22px; }
+
+.lista-check .capa-video { flex: none; width: 96px; }
+.capa-video { position: relative; display: block; aspect-ratio: 16 / 9; border-radius: 6px; background: var(--campo) center / cover; overflow: hidden; }
+.capa-video img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.capa-video.vazia { display: grid; place-items: center; color: var(--apagado); background: var(--cartao); }
+.capa-video.vazia svg { width: 22px; height: 22px; }
+.alternador { display: inline-flex; border: 1px solid var(--borda); border-radius: 8px; overflow: hidden; }
+.alternador button { display: grid; place-items: center; padding: 5px 9px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+.alternador button.ativo { background: var(--azul); color: #fff; }
+.alternador svg { width: 16px; height: 16px; }
+.grade-videos { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; max-height: 520px; overflow-y: auto; padding: 2px; }
+.grade-videos .video { display: flex; flex-direction: column; gap: 6px; padding: 5px 5px 8px; border: 2px solid transparent; border-radius: 10px; background: var(--campo); cursor: pointer; }
+.grade-videos .video.marcado { border-color: var(--amarelo); }
+.grade-videos .video:not(.marcado) .capa-video { opacity: 0.4; }
+.grade-videos .capa-wrap { position: relative; display: block; }
+.grade-videos .capa-wrap input { position: absolute; left: 7px; top: 7px; z-index: 1; }
+.grade-videos .num { position: absolute; right: 6px; top: 6px; width: auto; padding: 0 6px; border-radius: 5px; background: rgb(0 0 0 / 0.75); color: var(--texto); font: 600 11px/1.6 var(--mono); }
+.grade-videos .dur { position: absolute; right: 6px; bottom: 6px; padding: 0 6px; border-radius: 5px; background: rgb(0 0 0 / 0.75); font: 600 11px/1.6 var(--mono); }
+.grade-videos .titulo { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; padding: 0 4px; font-size: 12.5px; line-height: 1.3; }

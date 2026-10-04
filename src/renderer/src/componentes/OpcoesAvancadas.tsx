@@ -1,9 +1,10 @@
 // Janela "Opções avançadas" de um download: usada na prévia da tela Início e nos itens da fila.
-import { Info, Split } from 'lucide-react'
+import { Film, Info, LayoutGrid, List, Split } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { bytes, dataUpload, duracao, lerTempo, numero } from '@shared/formatar'
 import { codecCurto, escolherFormatos, temAudio, temVideo } from '@shared/formatos'
-import type { InfoMidia, OpcoesDownload } from '@shared/tipos'
+import { urlMiniaturaRemota } from '@shared/miniatura'
+import type { EntradaPlaylist, InfoMidia, OpcoesDownload } from '@shared/tipos'
 import { EditorLegendas, EditorPosProcesso, EditorQualidade } from './EditorOpcoes'
 import { CampoPasta, SelecaoOrganizar } from './Destino'
 import { Dialogo, Linha, LinhaInterruptor } from './ui'
@@ -268,16 +269,62 @@ export function expandir(spec: string, total: number): Set<number> {
   return r
 }
 
-/** Lista para marcar os vídeos da playlist (também usada na prévia da tela Início). */
+/** Capa de um vídeo da playlist (reduzida e guardada em cache pelo motor; só carrega quando chega perto da tela). */
+function CapaVideo({ e }: { e: EntradaPlaylist }) {
+  const [falhou, setFalhou] = useState(false)
+  if (!e.miniatura || falhou) {
+    return (
+      <span className="capa-video vazia">
+        <Film />
+      </span>
+    )
+  }
+  return (
+    <span className="capa-video">
+      <img src={urlMiniaturaRemota(e.miniatura)} loading="lazy" decoding="async" alt="" onError={() => setFalhou(true)} />
+    </span>
+  )
+}
+
+/** Lista para marcar os vídeos da playlist, em lista ou em grade de capas (também usada na prévia da tela Início). */
 export function ListaPlaylist({ info, o, mudar }: { info: InfoMidia; o: OpcoesDownload; mudar: Mudar }) {
   const pl = info.playlist!
+  const [grade, setGrade] = useState(() => {
+    try {
+      return localStorage.getItem('playlistGrade') === '1'
+    } catch {
+      return false
+    }
+  })
   const selecao = expandir(o.itensPlaylist, pl.total)
   const definir = (s: Set<number>) => mudar({ itensPlaylist: s.size === pl.total ? '' : s.size ? compactar([...s]) : '0' })
+  const alternar = (indice: number, marcar: boolean) => {
+    const nova = new Set(selecao)
+    if (marcar) nova.add(indice)
+    else nova.delete(indice)
+    definir(nova)
+  }
+  const escolherModo = (g: boolean) => {
+    setGrade(g)
+    try {
+      localStorage.setItem('playlistGrade', g ? '1' : '0')
+    } catch {
+      /* sem armazenamento: só não lembra */
+    }
+  }
   return (
     <>
       <div className="flex">
         <span className="muted pequeno flex-1">
           {selecao.size} de {pl.total} marcados
+        </span>
+        <span className="alternador" role="group" aria-label="Modo de exibição">
+          <button className={grade ? '' : 'ativo'} title="Lista" onClick={() => escolherModo(false)}>
+            <List />
+          </button>
+          <button className={grade ? 'ativo' : ''} title="Grade de capas" onClick={() => escolherModo(true)}>
+            <LayoutGrid />
+          </button>
         </span>
         <button className="btn pequeno" onClick={() => definir(new Set(pl.entradas.map((e) => e.indice)))}>
           Marcar todos
@@ -286,25 +333,36 @@ export function ListaPlaylist({ info, o, mudar }: { info: InfoMidia; o: OpcoesDo
           Desmarcar
         </button>
       </div>
-      <div className="lista-check">
-        {pl.entradas.map((e) => (
-          <label key={e.indice}>
-            <input
-              type="checkbox"
-              checked={selecao.has(e.indice)}
-              onChange={(ev) => {
-                const nova = new Set(selecao)
-                if (ev.target.checked) nova.add(e.indice)
-                else nova.delete(e.indice)
-                definir(nova)
-              }}
-            />
-            <span className="num">{e.indice}</span>
-            <span className="flex-1 truncar">{e.titulo}</span>
-            <span className="muted pequeno mono">{duracao(e.duracao)}</span>
-          </label>
-        ))}
-      </div>
+      {grade ? (
+        <div className="grade-videos">
+          {pl.entradas.map((e) => {
+            const marcado = selecao.has(e.indice)
+            return (
+              <label key={e.indice} className={marcado ? 'video marcado' : 'video'} title={e.titulo}>
+                <span className="capa-wrap">
+                  <CapaVideo e={e} />
+                  <input type="checkbox" checked={marcado} onChange={(ev) => alternar(e.indice, ev.target.checked)} />
+                  <span className="num">{e.indice}</span>
+                  {e.duracao ? <span className="dur">{duracao(e.duracao)}</span> : null}
+                </span>
+                <span className="titulo">{e.titulo}</span>
+              </label>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="lista-check">
+          {pl.entradas.map((e) => (
+            <label key={e.indice}>
+              <input type="checkbox" checked={selecao.has(e.indice)} onChange={(ev) => alternar(e.indice, ev.target.checked)} />
+              <span className="num">{e.indice}</span>
+              <CapaVideo e={e} />
+              <span className="flex-1 truncar">{e.titulo}</span>
+              <span className="muted pequeno mono">{duracao(e.duracao)}</span>
+            </label>
+          ))}
+        </div>
+      )}
     </>
   )
 }
