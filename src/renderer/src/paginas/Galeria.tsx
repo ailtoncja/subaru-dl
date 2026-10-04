@@ -21,9 +21,9 @@ import {
   X,
   XCircle
 } from 'lucide-react'
-import { useState, type DragEvent } from 'react'
+import { memo, useCallback, useEffect, useRef, useState, type DragEvent } from 'react'
 import { tempoRelativo } from '@shared/formatar'
-import { urlArquivoLocal } from '@shared/miniatura'
+import { urlArquivoLocal, urlMiniaturaRemota } from '@shared/miniatura'
 import type { ArquivoGaleria, ItemGaleria, OrganizarGaleria, StatusGaleria } from '@shared/tipos'
 import { pastaCurta, SelecaoOrganizarGaleria } from '../componentes/Destino'
 import { juntarLinks, ListaLinks, type LinhaLink } from '../componentes/ListaLinks'
@@ -211,7 +211,10 @@ export default function Galeria() {
             aoAbrir={(i) => lerLinha(i)}
             info={(l) => ({
               titulo: null,
-              miniatura: l.arquivos.find((a) => !a.video)?.url ?? null,
+              miniatura: (() => {
+                const primeira = l.arquivos.find((a) => !a.video)
+                return primeira ? urlMiniaturaRemota(primeira.url, l.url) : null
+              })(),
               carregando: l.carregando,
               erro: l.erro,
               resumo: l.lido ? `${l.marcados.size} de ${l.arquivos.length}${l.fim ? '' : '+'}` : null
@@ -219,6 +222,7 @@ export default function Galeria() {
             previa={(l, i) => (
               <GradeArquivos
                 l={l}
+                pagina={l.url}
                 alternar={(indice) => {
                   const marcados = new Set(l.marcados)
                   if (marcados.has(indice)) marcados.delete(indice)
@@ -314,10 +318,11 @@ export default function Galeria() {
         </div>
       )}
 
-      {previa && previa.arquivos.length > 0 && (
+      {previa && (previa.arquivos.length > 0 || previa.carregando) && (
         <div className="cartao recheado" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <GradeArquivos
             l={previa}
+            pagina={link}
             alternar={(indice) => {
               const marcados = new Set(previa.marcados)
               if (marcados.has(indice)) marcados.delete(indice)
@@ -380,17 +385,25 @@ export default function Galeria() {
 /** Grade de miniaturas com marcar/desmarcar e "carregar mais" (prévia de um link). */
 function GradeArquivos({
   l,
+  pagina,
   alternar,
   marcarTodos,
   carregarMais,
   fechar
 }: {
   l: Listagem
+  /** Link da galeria (para as miniaturas pedirem a imagem como se viessem do site) */
+  pagina: string
   alternar: (indice: number) => void
   marcarTodos: (sim: boolean) => void
   carregarMais: () => void
   fechar?: () => void
 }) {
+  // Função estável: marcar uma foto só redesenha aquela foto, não a grade inteira
+  const ultimo = useRef(alternar)
+  ultimo.current = alternar
+  const aoAlternar = useCallback((indice: number) => ultimo.current(indice), [])
+
   if (l.carregando && !l.arquivos.length) {
     return (
       <span className="muted pequeno flex">
@@ -420,7 +433,7 @@ function GradeArquivos({
       </div>
       <div className="grade-arquivos">
         {l.arquivos.map((a) => (
-          <MiniaturaArquivo key={a.indice} arquivo={a} marcado={l.marcados.has(a.indice)} aoClicar={() => alternar(a.indice)} />
+          <MiniaturaArquivo key={a.indice} arquivo={a} pagina={pagina} marcado={l.marcados.has(a.indice)} aoAlternar={aoAlternar} />
         ))}
       </div>
       {!l.fim && (
@@ -435,22 +448,63 @@ function GradeArquivos({
   )
 }
 
-/** Miniatura de um arquivo na prévia. Alguns sites bloqueiam a imagem fora do site: aí mostra só o ícone. */
-function MiniaturaArquivo({ arquivo: a, marcado, aoClicar }: { arquivo: ArquivoGaleria; marcado: boolean; aoClicar: () => void }) {
+// Um observador para todos os quadros: avisa quando cada um chega a ~400 px da tela.
+// (O loading="lazy" do navegador não funciona junto com o content-visibility da grade.)
+const avisos = new WeakMap<Element, () => void>()
+let observador: IntersectionObserver | null = null
+function quandoPerto(el: Element, aviso: () => void): () => void {
+  observador ??= new IntersectionObserver(
+    (entradas) => {
+      for (const e of entradas) {
+        if (!e.isIntersecting) continue
+        avisos.get(e.target)?.()
+        avisos.delete(e.target)
+        observador!.unobserve(e.target)
+      }
+    },
+    { rootMargin: '400px' }
+  )
+  avisos.set(el, aviso)
+  observador.observe(el)
+  return () => {
+    avisos.delete(el)
+    observador?.unobserve(el)
+  }
+}
+
+/**
+ * Miniatura de um arquivo na prévia. A imagem vem reduzida pelo motor (rápida e em cache);
+ * se o site bloquear, mostra só o ícone. memo: só redesenha quando a própria foto muda.
+ */
+const MiniaturaArquivo = memo(function MiniaturaArquivo({
+  arquivo: a,
+  pagina,
+  marcado,
+  aoAlternar
+}: {
+  arquivo: ArquivoGaleria
+  pagina: string
+  marcado: boolean
+  aoAlternar: (indice: number) => void
+}) {
   const [falhou, setFalhou] = useState(false)
+  const [perto, setPerto] = useState(false)
+  const caixa = useRef<HTMLDivElement>(null)
+  // Só busca a foto quando o quadro chega perto da tela
+  useEffect(() => (caixa.current && !a.video ? quandoPerto(caixa.current, () => setPerto(true)) : undefined), [a.video])
   return (
-    <div className={`arquivo${marcado ? ' marcado' : ''}`} onClick={aoClicar} title={`${a.nome}${a.largura ? ` · ${a.largura}×${a.altura}` : ''}`}>
+    <div ref={caixa} className={`arquivo${marcado ? ' marcado' : ''}`} onClick={() => aoAlternar(a.indice)} title={`${a.nome}${a.largura ? ` · ${a.largura}×${a.altura}` : ''}`}>
       <input type="checkbox" checked={marcado} readOnly />
       {a.video || falhou ? (
         <div className="sem-imagem">{a.video ? <Video /> : <Images />}</div>
-      ) : (
-        <img src={a.url} loading="lazy" referrerPolicy="no-referrer" alt="" onError={() => setFalhou(true)} />
-      )}
+      ) : perto ? (
+        <img src={urlMiniaturaRemota(a.url, pagina)} decoding="async" alt="" onError={() => setFalhou(true)} />
+      ) : null}
       {a.video && <span className="tipo">VÍDEO</span>}
       <span className="num">{a.indice}</span>
     </div>
   )
-}
+})
 
 function IconeStatus({ status }: { status: StatusGaleria }) {
   if (status === 'baixando') return <Loader2 className="girando" width={15} />
