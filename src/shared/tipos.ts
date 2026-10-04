@@ -126,6 +126,8 @@ export interface InfoMidia {
   legendas: string[]
   legendasAuto: string[]
   idiomasAudio: string[]
+  /** Idioma da faixa de áudio original do vídeo (as outras são dublagens). null = não informado pelo site. */
+  idiomaOriginal?: string | null
   capitulos: Capitulo[]
   playlist: { titulo: string; total: number; entradas: EntradaPlaylist[] } | null
 }

@@ -109,7 +109,7 @@ function argsFormato(o: OpcoesDownload, info: InfoMidia | null): string[] {
       }
     }
     const sort = SORT_CODEC[o.codecAudio]
-    if (sort && !o.formatoId) a.push('-S', sort)
+    if (!o.formatoId) a.push('-S', ['lang', sort].filter(Boolean).join(','))
     return a
   }
 
@@ -126,8 +126,8 @@ function argsFormato(o: OpcoesDownload, info: InfoMidia | null): string[] {
     const filtro = `${o.qualidade === 'melhor' ? '' : `[height<=${o.qualidade}]`}${o.ate30fps ? '[fps<=30]' : ''}`
     // Se não existir na qualidade pedida, pega a mais próxima abaixo; em último caso, a pior disponível
     a.push('-f', `bv*${filtro}+${audioIdioma}/b${filtro}/wv*+ba/w`)
-    const sort = [SORT_CODEC[codecVideo], SORT_CODEC[codecAudio]].filter(Boolean)
-    if (sort.length) a.push('-S', sort.join(','))
+    // "lang" na frente: a faixa de áudio original (ou a escolhida) vem antes de qualquer preferência de codec
+    a.push('-S', ['lang', SORT_CODEC[codecVideo], SORT_CODEC[codecAudio]].filter(Boolean).join(','))
   }
 
   if (!o.manterOriginal) a.push('--merge-output-format', o.container, '--remux-video', o.container)
@@ -361,6 +361,11 @@ function lerInfo(d: any): InfoMidia {
     .filter((f: any) => f.format_id && !/storyboard|mhtml/i.test(f.format_note ?? '') && f.ext !== 'mhtml')
     .map(lerFormato)
   const idiomasAudio = [...new Set(formatos.filter((f) => f.vcodec === 'none' && f.idioma).map((f) => f.idioma!))]
+  // O YouTube marca a faixa original com language_preference positivo e "original" na descrição; as dubladas têm -1
+  const faixaOriginal = (d.formats ?? []).find(
+    (f: any) => f.vcodec === 'none' && f.language && ((f.language_preference ?? 0) > 0 || /original/i.test(f.format_note ?? ''))
+  )
+  const idiomaOriginal: string | null = faixaOriginal?.language ?? null
   const capitulos: Capitulo[] = (d.chapters ?? []).map((c: any) => ({
     titulo: c.title ?? '',
     inicio: c.start_time ?? 0,
@@ -408,6 +413,7 @@ function lerInfo(d: any): InfoMidia {
     legendas: Object.keys(d.subtitles ?? {}).filter((k) => k !== 'live_chat'),
     legendasAuto: Object.keys(d.automatic_captions ?? {}).filter((k) => !k.includes('-') || k.endsWith('-orig')),
     idiomasAudio,
+    idiomaOriginal,
     capitulos,
     playlist: ehPlaylist ? { titulo: d.title ?? 'Playlist', total: d.playlist_count ?? entradas.length, entradas } : null
   }
