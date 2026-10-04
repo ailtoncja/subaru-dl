@@ -2,6 +2,7 @@
 import { execFile, type ChildProcess } from 'node:child_process'
 import { join } from 'node:path'
 import { createInterface } from 'node:readline'
+import { EXTENSOES_IMAGEM } from '@shared/miniatura'
 import type { ArquivoGaleria, ItemGaleria, OrganizarGaleria } from '@shared/tipos'
 import { gravadorAdiado, lerJson, pastaDados } from './armazenamento'
 import { configuracoes, obterSegredos } from './configuracoes'
@@ -48,6 +49,7 @@ export function carregarGaleria(): void {
   itens = lerJson<ItemGaleria[]>('galeria.json', []).map((i) => ({
     ...i,
     falhas: i.falhas ?? 0,
+    amostras: i.amostras ?? [],
     organizar: i.organizar ?? 'padrao',
     formatoPasta: i.formatoPasta ?? '{category}/{user}',
     intervalo: i.intervalo ?? null,
@@ -85,6 +87,7 @@ export function adicionarGaleria(
       intervalo: intervalo?.trim() || null,
       arquivos: 0,
       ultimoArquivo: null,
+      amostras: [],
       pulados: 0,
       falhas: 0,
       erro: null,
@@ -162,8 +165,12 @@ function iniciar(id: string) {
   createInterface({ input: proc.stdout! }).on('line', (linha) => {
     const atual = itens.find((i) => i.id === id)
     if (!atual || !linha.trim()) return
-    if (linha.startsWith('# ')) definir(id, { pulados: atual.pulados + 1, ultimoArquivo: linha.slice(2).trim() }, false)
-    else definir(id, { arquivos: atual.arquivos + 1, ultimoArquivo: linha.trim() }, false)
+    const pulado = linha.startsWith('# ')
+    const arquivo = (pulado ? linha.slice(2) : linha).trim()
+    // Guarda as últimas imagens para o mosaico (vídeos ficam de fora)
+    const amostras = EXTENSOES_IMAGEM.test(arquivo) ? [...atual.amostras.filter((a) => a !== arquivo), arquivo].slice(-4) : atual.amostras
+    if (pulado) definir(id, { pulados: atual.pulados + 1, ultimoArquivo: arquivo, amostras }, false)
+    else definir(id, { arquivos: atual.arquivos + 1, ultimoArquivo: arquivo, amostras }, false)
   })
   createInterface({ input: proc.stderr! }).on('line', (linha) => {
     if (!linha.trim()) return

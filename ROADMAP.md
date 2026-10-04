@@ -116,6 +116,7 @@ Legenda: `[ ]` a fazer · `[x]` pronto
 - [x] Em listas de vários links: pasta própria por link e "Ver" em cada um (vídeos da playlist no Início, miniaturas na Galeria)
 - [x] Playlist no Início já abre com a lista de vídeos para escolher
 - [x] "Sem subpastas" como primeira opção de organização no YouTube e na Galeria (Galeria também: por site, site → perfil, personalizado)
+- [x] Miniaturas do que foi baixado: mosaico das imagens na Galeria e capas maiores no histórico
 
 ---
 

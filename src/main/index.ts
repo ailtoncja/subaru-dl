@@ -1,9 +1,11 @@
-import { app, BrowserWindow, clipboard, dialog, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, clipboard, dialog, ipcMain, net, protocol, shell } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import type { ApiSubaru } from '@shared/api'
 import { EVENTOS } from '@shared/api'
+import { ESQUEMA_MINIATURA, EXTENSOES_IMAGEM } from '@shared/miniatura'
 import * as cfg from './configuracoes'
 import * as galeria from './galeria'
 import * as ferramentas from './ferramentas'
@@ -19,6 +21,9 @@ let saindo = false
 // Em desenvolvimento, dados separados: dá para testar com o programa instalado aberto,
 // sem mexer na fila, histórico e configurações de quem usa
 if (!app.isPackaged) app.setPath('userData', join(app.getPath('appData'), 'Subaru DL (dev)'))
+
+// Miniaturas das imagens baixadas (a interface não pode abrir arquivos do disco direto)
+protocol.registerSchemesAsPrivileged([{ scheme: ESQUEMA_MINIATURA, privileges: { standard: true, secure: true, supportFetchAPI: true } }])
 
 // Uma instância só: abrir de novo traz a janela existente para frente
 if (!app.requestSingleInstanceLock()) {
@@ -272,6 +277,13 @@ function aplicarConfiguracoesDeSistema() {
 }
 
 app.whenReady().then(() => {
+  // Só entrega arquivos de imagem que existem: nada além disso sai do disco por aqui
+  protocol.handle(ESQUEMA_MINIATURA, async (req) => {
+    const caminho = new URL(req.url).searchParams.get('c') ?? ''
+    if (!EXTENSOES_IMAGEM.test(caminho) || !existsSync(caminho)) return new Response(null, { status: 404 })
+    return net.fetch(pathToFileURL(caminho).toString())
+  })
+
   app.setAppUserModelId('local.subaru.dl')
   ferramentas.prepararFerramentas()
 
