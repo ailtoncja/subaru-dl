@@ -22,7 +22,7 @@ export default function Dependencias() {
   }
 
   return (
-    <>
+    <div className="pagina">
       <div className="cabecalho">
         <h1>Dependências</h1>
         <button className="btn" disabled={algumaAtualizando} onClick={() => window.api.ferramentas().then((f) => useEstado.setState({ ferramentas: f }))}>
@@ -32,7 +32,7 @@ export default function Dependencias() {
           <Download /> Atualizar tudo
         </button>
       </div>
-      <div className="pagina">
+      <div className="secao" style={{ gap: 18 }}>
         <Secao titulo="Ferramentas embutidas">
           {ferramentas.map((f) => {
             const Icone = ICONES[f.nome]
@@ -85,6 +85,6 @@ export default function Dependencias() {
           As ferramentas ficam em <span className="mono">%APPDATA%\Subaru DL\bin</span>. O yt-dlp acha o Deno, o ffmpeg e o aria2 sozinho.
         </p>
       </div>
-    </>
+    </div>
   )
 }

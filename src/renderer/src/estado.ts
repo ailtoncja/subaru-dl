@@ -1,7 +1,7 @@
 import { create } from 'zustand'
-import type { Biblioteca, Configuracoes, Duplicado, EntradaLog, EstadoFerramenta, ItemFila, ItemGaleria } from '@shared/tipos'
+import type { Configuracoes, Duplicado, EntradaHistorico, EntradaLog, EstadoFerramenta, ItemFila, ItemGaleria, OpcoesDownload } from '@shared/tipos'
 
-export type Pagina = 'downloads' | 'busca' | 'biblioteca' | 'galeria' | 'dados' | 'logs' | 'dependencias' | 'configuracoes'
+export type Pagina = 'inicio' | 'downloads' | 'playlists' | 'galeria' | 'logs' | 'dependencias' | 'configuracoes'
 
 export interface Toast {
   id: number
@@ -13,6 +13,7 @@ interface PedidoDuplicados {
   urls: string[]
   duplicados: Duplicado[]
   iniciar: boolean
+  opcoes?: Partial<OpcoesDownload>
   /** URLs novas que já entraram na fila (só informativo) */
   adicionados: number
 }
@@ -20,26 +21,30 @@ interface PedidoDuplicados {
 interface Estado {
   pagina: Pagina
   fila: ItemFila[]
-  biblioteca: Biblioteca
+  historico: EntradaHistorico[]
   galeria: ItemGaleria[]
   config: Configuracoes | null
   logs: EntradaLog[]
   ferramentas: EstadoFerramenta[]
+  /** Link copiado no navegador, oferecido na tela Início */
   linkCopiado: string | null
+  /** Link que a tela Início deve abrir (Ctrl+V, botão Colar URL) */
+  linkParaAbrir: string | null
   duplicados: PedidoDuplicados | null
   toasts: Toast[]
   ir: (p: Pagina) => void
 }
 
 export const useEstado = create<Estado>((set) => ({
-  pagina: 'downloads',
+  pagina: 'inicio',
   fila: [],
-  biblioteca: { itens: [], colecoes: [] },
+  historico: [],
   galeria: [],
   config: null,
   logs: [],
   ferramentas: [],
   linkCopiado: null,
+  linkParaAbrir: null,
   duplicados: null,
   toasts: [],
   ir: (pagina) => set({ pagina })
@@ -58,29 +63,36 @@ export async function salvarConfig(parcial: Partial<Configuracoes>): Promise<voi
 }
 
 /** Adiciona links à fila e abre o diálogo de duplicados quando preciso (item 8). */
-export async function adicionarLinks(urls: string[], iniciar = false, opcoes?: Parameters<typeof window.api.adicionar>[1]): Promise<number> {
+export async function adicionarLinks(urls: string[], iniciar = false, opcoes?: Partial<OpcoesDownload>): Promise<number> {
   const r = await window.api.adicionar(urls, opcoes, iniciar)
   if (r.duplicados.length) {
-    useEstado.setState({ duplicados: { urls: r.duplicados.map((d) => d.url), duplicados: r.duplicados, iniciar, adicionados: r.adicionados } })
+    useEstado.setState({ duplicados: { urls: r.duplicados.map((d) => d.url), duplicados: r.duplicados, iniciar, opcoes, adicionados: r.adicionados } })
   } else if (r.adicionados === 0) {
     avisar('Nenhum link válido encontrado', 'erro')
   }
   return r.adicionados
 }
 
+/** Abre um link na tela Início (prévia). */
+export function abrirNoInicio(url: string): void {
+  useEstado.setState({ linkParaAbrir: url, linkCopiado: null, pagina: 'inicio' })
+}
+
+export const extrairLinks = (texto: string): string[] => texto.match(/https?:\/\/[^\s"'<>]+/gi) ?? []
+
 export async function iniciarEstado(): Promise<void> {
   const api = window.api
-  const [fila, config, logs, biblioteca, galeria] = await Promise.all([
+  const [fila, config, logs, historico, galeria] = await Promise.all([
     api.obterFila(),
     api.obterConfiguracoes(),
     api.obterLogs(),
-    api.obterBiblioteca(),
+    api.obterHistorico(),
     api.obterGaleria()
   ])
-  useEstado.setState({ fila, config, logs, biblioteca, galeria })
+  useEstado.setState({ fila, config, logs, historico, galeria })
 
   api.aoMudarFila((fila) => useEstado.setState({ fila }))
-  api.aoMudarBiblioteca((biblioteca) => useEstado.setState({ biblioteca }))
+  api.aoMudarHistorico((historico) => useEstado.setState({ historico }))
   api.aoMudarGaleria((galeria) => useEstado.setState({ galeria }))
   api.aoNovoLog((entrada) =>
     useEstado.setState((s) => ({ logs: s.logs.length > 3000 ? [...s.logs.slice(-2500), entrada] : [...s.logs, entrada] }))
@@ -92,7 +104,6 @@ export async function iniciarEstado(): Promise<void> {
     useEstado.setState({ linkCopiado: url })
   })
   api.aoDuplicados((urls, duplicados, iniciar) => useEstado.setState({ duplicados: { urls, duplicados, iniciar, adicionados: 0 } }))
-  api.aoNavegar((pagina) => useEstado.setState({ pagina: pagina as Pagina }))
 
   void api.ferramentas().then((ferramentas) => useEstado.setState({ ferramentas }))
 }

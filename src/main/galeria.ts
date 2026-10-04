@@ -2,7 +2,7 @@
 import { execFile, type ChildProcess } from 'node:child_process'
 import { join } from 'node:path'
 import { createInterface } from 'node:readline'
-import type { ItemGaleria } from '@shared/tipos'
+import type { ItemGaleria, OrganizarGaleria } from '@shared/tipos'
 import { gravadorAdiado, lerJson, pastaDados } from './armazenamento'
 import { configuracoes, obterSegredos } from './configuracoes'
 import { executar } from './ferramentas'
@@ -48,6 +48,7 @@ export function carregarGaleria(): void {
   itens = lerJson<ItemGaleria[]>('galeria.json', []).map((i) => ({
     ...i,
     falhas: i.falhas ?? 0,
+    organizar: i.organizar ?? 'padrao',
     dicaErro: i.dicaErro ?? null,
     status: i.status === 'baixando' ? 'pausado' : i.status
   }))
@@ -59,8 +60,10 @@ export function salvarGaleriaAgora(): void {
   gravador.descarregar()
 }
 
-export function adicionarGaleria(urls: string[]): number {
-  const pasta = configuracoes().pastaGaleria
+/** Cada link pode ter a sua pasta e o seu jeito de organizar (padrão: os das configurações). */
+export function adicionarGaleria(urls: string[], pastaEscolhida?: string | null, organizarEscolhido?: OrganizarGaleria | null): number {
+  const pasta = pastaEscolhida || configuracoes().pastaGaleria
+  const organizar = organizarEscolhido ?? configuracoes().galeriaOrganizar
   const novos: ItemGaleria[] = urls
     .map((u) => u.trim())
     .filter((u) => /^https?:\/\/\S+$/i.test(u))
@@ -69,6 +72,7 @@ export function adicionarGaleria(urls: string[]): number {
       url,
       status: 'aguardando',
       pasta,
+      organizar,
       arquivos: 0,
       ultimoArquivo: null,
       pulados: 0,
@@ -97,6 +101,8 @@ function argumentos(item: ItemGaleria): string[] {
   const c = configuracoes()
   const s = obterSegredos()
   const a = ['--no-colors', '-d', item.pasta]
+  // Padrão do gallery-dl: site/perfil/…; "plana" põe tudo direto na pasta escolhida
+  if (item.organizar === 'plana') a.push('-o', 'directory=[]')
   if (c.cookies.origem === 'navegador' && c.cookies.navegador !== 'nenhum') {
     a.push('--cookies-from-browser', c.cookies.navegador + (c.cookies.perfil ? `:${c.cookies.perfil}` : ''))
   } else if (c.cookies.origem === 'arquivo' && c.cookies.arquivo) {

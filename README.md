@@ -43,8 +43,7 @@ e depois `node scripts/cdp.mjs eval "<js>"` ou `node scripts/cdp.mjs foto tela.p
 src/main/       motor (processo principal do Electron)
   fila.ts         fila de downloads: simultâneos, pausa, novas tentativas, progresso
   ytdlp.ts        transforma as opções da interface em argumentos do yt-dlp
-  biblioteca.ts   tudo o que já foi baixado: tags, coleções, duplicados, dividir arquivos
-  dados.ts        lê playlists/canais/buscas e exporta (Excel, CSV, JSON, Markdown, HTML, TXT)
+  historico.ts    tudo o que já foi baixado (Downloads → Concluídos) e detecção de duplicados
   galeria.ts      fila de imagens com o gallery-dl
   ferramentas.ts  ferramentas embutidas: localização, versões e atualização
   configuracoes.ts, logs.ts, sistema.ts (bandeja, atalhos, área de transferência)

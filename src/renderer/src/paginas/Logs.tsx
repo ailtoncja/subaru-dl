@@ -52,7 +52,7 @@ export default function Logs() {
   }
 
   return (
-    <>
+    <div className="pagina">
       <div className="cabecalho">
         <h1>
           Logs <span className="sub">{logs.length} entradas</span>
@@ -67,7 +67,7 @@ export default function Logs() {
           <Trash2 /> Limpar
         </button>
       </div>
-      <div className="pagina" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div className="flex">
           <Segmentado
             valor={filtro}
@@ -80,14 +80,14 @@ export default function Logs() {
               { valor: 'erro', nome: 'Erros' }
             ]}
           />
-          <div className="caixa-link flex-1 flex" style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '0 10px', background: 'var(--surface)' }}>
+          <div className="busca">
             <Search width={16} className="muted" />
             <input className="flex-1" style={{ border: 0, background: 'transparent', outline: 'none', padding: '7px 0' }} placeholder="Procurar nos logs…" value={busca} onChange={(e) => setBusca(e.target.value)} />
           </div>
         </div>
 
         {dicas.map((d) => (
-          <div className="aviso-caixa" key={d}>
+          <div className="aviso-amarelo" key={d}>
             <AlertTriangle />
             <span>{d}</span>
           </div>
@@ -115,6 +115,6 @@ export default function Logs() {
           </div>
         )}
       </div>
-    </>
+    </div>
   )
 }

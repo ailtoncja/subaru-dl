@@ -1,5 +1,86 @@
-import { X } from 'lucide-react'
-import { useEffect, type ReactNode } from 'react'
+import { MoreHorizontal, X, type LucideIcon } from 'lucide-react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
+
+export type ItemMenu = { icone: LucideIcon; texto: string; acao: () => unknown; perigo?: boolean } | 'separador' | null | undefined | false
+
+/**
+ * Botão "⋯" com menu. O menu é desenhado direto no <body> com posição fixa,
+ * então não é cortado pelo cartão nem empurra o layout.
+ */
+export function MenuAcoes({ itens, titulo = 'Mais ações' }: { itens: ItemMenu[]; titulo?: string }) {
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
+  const botao = useRef<HTMLButtonElement>(null)
+  const menu = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!pos) return
+    const fechar = (e: Event) => {
+      if (e.type === 'mousedown' && (menu.current?.contains(e.target as Node) || botao.current?.contains(e.target as Node))) return
+      setPos(null)
+    }
+    const tecla = (e: KeyboardEvent) => e.key === 'Escape' && setPos(null)
+    window.addEventListener('mousedown', fechar)
+    window.addEventListener('resize', fechar)
+    document.addEventListener('scroll', fechar, true)
+    window.addEventListener('keydown', tecla)
+    return () => {
+      window.removeEventListener('mousedown', fechar)
+      window.removeEventListener('resize', fechar)
+      document.removeEventListener('scroll', fechar, true)
+      window.removeEventListener('keydown', tecla)
+    }
+  }, [pos])
+
+  // Se não couber embaixo, abre para cima
+  useEffect(() => {
+    if (!pos || !menu.current) return
+    const r = menu.current.getBoundingClientRect()
+    if (r.bottom > window.innerHeight - 8) {
+      const b = botao.current!.getBoundingClientRect()
+      setPos({ ...pos, top: Math.max(8, b.top - r.height - 6) })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pos?.right])
+
+  const abrir = () => {
+    if (pos) return setPos(null)
+    const r = botao.current!.getBoundingClientRect()
+    setPos({ top: r.bottom + 6, right: window.innerWidth - r.right })
+  }
+
+  return (
+    <>
+      <button ref={botao} className="icone-btn" title={titulo} onClick={abrir}>
+        <MoreHorizontal />
+      </button>
+      {pos &&
+        createPortal(
+          <div ref={menu} className="menu" style={{ top: pos.top, right: pos.right }}>
+            {itens.filter(Boolean).map((item, i) =>
+              item === 'separador' ? (
+                <hr key={i} />
+              ) : (
+                item && (
+                  <button
+                    key={i}
+                    className={item.perigo ? 'perigo' : ''}
+                    onClick={() => {
+                      setPos(null)
+                      void item.acao()
+                    }}
+                  >
+                    <item.icone /> {item.texto}
+                  </button>
+                )
+              )
+            )}
+          </div>,
+          document.body
+        )}
+    </>
+  )
+}
 
 export function Interruptor({ ligado, aoMudar, desativado }: { ligado: boolean; aoMudar: (v: boolean) => void; desativado?: boolean }) {
   return (
@@ -171,7 +252,7 @@ export function Dialogo({
       <div className={`dialogo${largo ? ' largo' : ''}`} role="dialog">
         <header>
           <h2>{titulo}</h2>
-          <button className="icone-btn" onClick={aoFechar} title="Fechar">
+          <button className="icone-btn leve" onClick={aoFechar} title="Fechar">
             <X />
           </button>
         </header>

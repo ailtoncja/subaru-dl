@@ -1,16 +1,5 @@
 // Monta os argumentos do yt-dlp a partir das opções da interface e lê as informações dos links.
-import type {
-  Capitulo,
-  Configuracoes,
-  EntradaPlaylist,
-  FiltrosBusca,
-  Formato,
-  InfoMidia,
-  ItemFila,
-  OpcoesDownload,
-  ResultadoBusca,
-  Segredos
-} from '@shared/tipos'
+import type { Capitulo, Configuracoes, EntradaPlaylist, Formato, InfoMidia, ItemFila, OpcoesDownload, Segredos } from '@shared/tipos'
 import { executarAteFim, pastaBin } from './ferramentas'
 import { logar } from './logs'
 
@@ -159,7 +148,7 @@ const CAMPOS_NOME: Record<string, string> = {
 function modeloSaida(c: Configuracoes, o: OpcoesDownload, ehPlaylist: boolean): string {
   const audio = o.modo === 'audio'
   let pasta = ''
-  switch (c.subpasta) {
+  switch (o.subpasta) {
     case 'playlist':
       pasta = ehPlaylist ? '%(playlist_title,playlist)s/' : ''
       break
@@ -176,7 +165,7 @@ function modeloSaida(c: Configuracoes, o: OpcoesDownload, ehPlaylist: boolean): 
       pasta = '%(artist,creator,uploader|Desconhecido)s/%(album|Sem álbum)s/'
       break
     case 'personalizado':
-      pasta = c.subpastaPersonalizada.trim().replace(/[\\/]+$/, '') + '/'
+      pasta = o.subpastaPersonalizada.trim().replace(/[\\/]+$/, '') + '/'
       break
   }
 
@@ -205,24 +194,6 @@ function modeloSaida(c: Configuracoes, o: OpcoesDownload, ehPlaylist: boolean): 
 
 // ---------- Download completo ----------
 
-/** Só as informações, sem o vídeo (item 72). */
-function argsSomenteInfo(item: ItemFila, c: Configuracoes, s: Segredos, pasta: string): string[] {
-  const i = item.opcoes.somenteInfo!
-  const ehPlaylist = !!item.info?.playlist
-  const a = [...argsBase(c), '--no-quiet', '--skip-download', '-P', `home:${pasta}`, '-o', modeloSaida(c, item.opcoes, ehPlaylist)]
-  if (i.json || i.comentarios) a.push('--write-info-json')
-  if (i.comentarios) a.push('--write-comments')
-  if (i.descricao) a.push('--write-description')
-  if (i.miniatura) a.push('--write-thumbnail', '--convert-thumbnails', 'jpg')
-  if (i.legendas) {
-    a.push('--write-subs', '--write-auto-subs', '--sub-langs', i.idiomasLegenda.length ? i.idiomasLegenda.join(',') : 'all,-live_chat')
-  }
-  if (c.nomesSeguros) a.push('--restrict-filenames')
-  if (ehPlaylist && item.opcoes.itensPlaylist.trim()) a.push('-I', item.opcoes.itensPlaylist.trim())
-  a.push(...argsRede(c, s, item.url), '--', item.url)
-  return a
-}
-
 export function pastaDoItem(item: ItemFila, c: Configuracoes): string {
   const o = item.opcoes
   return o.pasta ?? (o.modo === 'audio' ? c.pastaAudio : c.pastaVideo)
@@ -233,7 +204,6 @@ export function argsDownload(item: ItemFila, c: Configuracoes, s: Segredos): str
   const info = item.info
   const ehPlaylist = !!info?.playlist
   const pasta = pastaDoItem(item, c)
-  if (o.somenteInfo) return argsSomenteInfo(item, c, s, pasta)
   const a: string[] = [
     ...argsBase(c),
     '--newline',
@@ -436,7 +406,7 @@ function lerInfo(d: any): InfoMidia {
 
 export class ErroYtdlp extends Error {}
 
-export async function buscarInfo(url: string, c: Configuracoes, s: Segredos, itemId: string): Promise<InfoMidia> {
+export async function buscarInfo(url: string, c: Configuracoes, s: Segredos, itemId: string | null): Promise<InfoMidia> {
   const args = [...argsBase(c), '-J', '--flat-playlist', ...argsRede(c, s, url), '--', url]
   logar('comando', comandoParaLog(args), itemId)
   const { stdout, stderr, codigo } = await executarAteFim('yt-dlp.exe', args, 180_000)
@@ -449,57 +419,4 @@ export async function buscarInfo(url: string, c: Configuracoes, s: Segredos, ite
     throw new ErroYtdlp(erro.replace(/^ERROR:\s*/, ''))
   }
   return lerInfo(JSON.parse(stdout))
-}
-
-// ---------- Busca no YouTube (item 6) ----------
-
-// O filtro da busca do YouTube é um protobuf em base64 no parâmetro "sp".
-function varint(n: number): number[] {
-  const out: number[] = []
-  while (n > 0x7f) {
-    out.push((n & 0x7f) | 0x80)
-    n >>>= 7
-  }
-  out.push(n)
-  return out
-}
-const campo = (numero: number, valor: number) => [...varint((numero << 3) | 0), ...varint(valor)]
-
-function parametroFiltro(f: FiltrosBusca): string | null {
-  const ORDEM = { relevancia: 0, avaliacao: 1, data: 2, views: 3 }
-  const DATA = { qualquer: 0, hoje: 2, semana: 3, mes: 4, ano: 5 }
-  const DURACAO = { qualquer: 0, curto: 1, longo: 2, medio: 3 }
-  const RECURSO = { hd: 4, legendas: 5, cc: 6, '3d': 7, aoVivo: 8, '4k': 14, '360': 15, hdr: 25, vr180: 26 }
-
-  const filtros: number[] = [...campo(2, 1)] // tipo: vídeo
-  if (DATA[f.data]) filtros.push(...campo(1, DATA[f.data]))
-  if (DURACAO[f.duracao]) filtros.push(...campo(3, DURACAO[f.duracao]))
-  for (const r of f.recursos) filtros.push(...campo(RECURSO[r], 1))
-
-  const msg: number[] = []
-  if (ORDEM[f.ordem]) msg.push(...campo(1, ORDEM[f.ordem]))
-  msg.push(...varint((2 << 3) | 2), ...varint(filtros.length), ...filtros)
-  return Buffer.from(msg).toString('base64')
-}
-
-export async function buscarNoYoutube(termo: string, f: FiltrosBusca, limite: number, c: Configuracoes, s: Segredos): Promise<ResultadoBusca[]> {
-  const sp = parametroFiltro(f)
-  const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(termo)}${sp ? `&sp=${encodeURIComponent(sp)}` : ''}`
-  const args = ['--color', 'never', '-J', '--flat-playlist', '-I', `:${limite}`, ...argsRede(c, s, url), '--', url]
-  logar('comando', comandoParaLog(args))
-  const { stdout, stderr, codigo } = await executarAteFim('yt-dlp.exe', args, 120_000)
-  if (codigo !== 0 || !stdout.trim()) throw new ErroYtdlp(stderr.trim().split('\n').pop() || 'A busca falhou')
-  const d = JSON.parse(stdout)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (d.entries ?? [])
-    .filter((e: any) => e && e.id && (e.ie_key === 'Youtube' || /watch\?v=|shorts\//.test(e.url ?? '')))
-    .map((e: any) => ({
-      id: e.id,
-      url: e.url?.startsWith('http') ? e.url : `https://www.youtube.com/watch?v=${e.id}`,
-      titulo: e.title ?? e.id,
-      canal: e.channel ?? e.uploader ?? null,
-      duracao: e.duration ?? null,
-      views: e.view_count ?? null,
-      miniatura: e.thumbnails?.[e.thumbnails.length - 1]?.url ?? `https://i.ytimg.com/vi/${e.id}/mqdefault.jpg`
-    }))
 }
