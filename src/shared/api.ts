@@ -1,30 +1,27 @@
 import type {
-  Biblioteca,
-  CampoDados,
-  Colecao,
   Configuracoes,
   Duplicado,
+  EntradaHistorico,
   EntradaLog,
   EstadoFerramenta,
-  FiltrosBusca,
-  FonteDados,
-  FormatoExportacao,
+  InfoMidia,
   ItemFila,
   ItemGaleria,
-  LinhaDados,
   NomeFerramenta,
   OpcoesDownload,
-  ResultadoBusca,
+  OrganizarGaleria,
   Segredos
 } from './tipos'
 
 /** O que a interface pode pedir para o motor. Exposto em window.api pelo preload. */
 export interface ApiSubaru {
   // Fila
+  /** Lê o link para a prévia da tela Início (e diz se já foi baixado antes). */
+  lerLink(url: string): Promise<{ info: InfoMidia; duplicado: Duplicado | null }>
   adicionar(urls: string[], opcoes?: Partial<OpcoesDownload>, iniciar?: boolean): Promise<{ adicionados: number; duplicados: Duplicado[] }>
-  adicionarMesmoAssim(urls: string[], opcoes?: Partial<OpcoesDownload>): Promise<void>
+  adicionarMesmoAssim(urls: string[], opcoes?: Partial<OpcoesDownload>, iniciar?: boolean): Promise<void>
+  adicionarComInfo(url: string, info: InfoMidia, opcoes: Partial<OpcoesDownload>, iniciar: boolean): Promise<void>
   remover(ids: string[]): Promise<void>
-  limparConcluidos(): Promise<void>
   iniciarFila(): Promise<void>
   pausarTodos(): Promise<void>
   pausar(id: string): Promise<void>
@@ -36,25 +33,14 @@ export interface ApiSubaru {
   dividirPlaylist(id: string): Promise<void>
   obterFila(): Promise<ItemFila[]>
 
-  // Biblioteca (fase 2)
-  obterBiblioteca(): Promise<Biblioteca>
-  etiquetar(id: string, tags: string[], colecoes: string[]): Promise<void>
-  renomearNaBiblioteca(id: string, novoNome: string): Promise<{ ok: boolean; erro?: string }>
-  excluirDaBiblioteca(ids: string[], apagarArquivos: boolean): Promise<number>
-  removerSemArquivo(): Promise<number>
-  criarColecao(nome: string): Promise<Colecao>
-  renomearColecao(id: string, nome: string): Promise<void>
-  excluirColecao(id: string): Promise<void>
-  duracaoNaBiblioteca(id: string): Promise<number | null>
-  dividirArquivo(id: string, cortes: number[], apagarOriginal: boolean): Promise<{ ok: boolean; partes?: number; erro?: string }>
+  // Histórico (Downloads → Concluídos)
+  obterHistorico(): Promise<EntradaHistorico[]>
+  removerDoHistorico(ids: string[]): Promise<void>
+  limparHistorico(): Promise<void>
 
-  // Dados (fase 2)
-  lerDados(fonte: FonteDados, entrada: string, limite: number, detalhado: boolean): Promise<LinhaDados[]>
-  exportarDados(linhas: LinhaDados[], campos: CampoDados[], formato: FormatoExportacao): Promise<string | null>
-
-  // Galeria (fase 3)
+  // Galeria
   obterGaleria(): Promise<ItemGaleria[]>
-  adicionarGaleria(urls: string[]): Promise<number>
+  adicionarGaleria(urls: string[], pasta?: string | null, organizar?: OrganizarGaleria | null): Promise<number>
   pausarGaleria(id: string): Promise<void>
   retomarGaleria(id: string): Promise<void>
   removerGaleria(ids: string[]): Promise<void>
@@ -64,12 +50,17 @@ export interface ApiSubaru {
   abrirArquivo(caminho: string): Promise<void>
   abrirPasta(caminho: string): Promise<void>
   mostrarNaPasta(caminho: string): Promise<void>
-  renomear(id: string, novoNome: string): Promise<{ ok: boolean; erro?: string }>
   escolherPasta(atual?: string): Promise<string | null>
   escolherArquivo(filtros?: { name: string; extensions: string[] }[]): Promise<string | null>
   lerArquivoLinks(): Promise<string[]>
   abrirLink(url: string): Promise<void>
   copiar(texto: string): Promise<void>
+  lerClipboard(): Promise<string>
+
+  // Janela (barra de título própria)
+  janelaMinimizar(): Promise<void>
+  janelaMaximizar(): Promise<void>
+  janelaFechar(): Promise<void>
 
   // Configurações
   obterConfiguracoes(): Promise<Configuracoes>
@@ -78,9 +69,6 @@ export interface ApiSubaru {
   obterSegredos(): Promise<Segredos>
   salvarSegredos(segredos: Segredos): Promise<void>
   perfisNavegador(navegador: string): Promise<string[]>
-
-  // Busca no YouTube
-  buscar(termo: string, filtros: FiltrosBusca, limite: number): Promise<ResultadoBusca[]>
 
   // Ferramentas
   ferramentas(): Promise<EstadoFerramenta[]>
@@ -98,22 +86,22 @@ export interface ApiSubaru {
 
   // Eventos do motor
   aoMudarFila(cb: (fila: ItemFila[]) => void): () => void
+  aoMudarHistorico(cb: (h: EntradaHistorico[]) => void): () => void
+  aoMudarGaleria(cb: (itens: ItemGaleria[]) => void): () => void
   aoNovoLog(cb: (entrada: EntradaLog) => void): () => void
   aoMudarFerramentas(cb: (estado: EstadoFerramenta[]) => void): () => void
   aoLinkCopiado(cb: (url: string) => void): () => void
   aoDuplicados(cb: (urls: string[], duplicados: Duplicado[], iniciar: boolean) => void): () => void
-  aoNavegar(cb: (pagina: string) => void): () => void
-  aoMudarBiblioteca(cb: (b: Biblioteca) => void): () => void
-  aoProgressoDados(cb: (lidos: number) => void): () => void
-  aoMudarGaleria(cb: (itens: ItemGaleria[]) => void): () => void
+  aoMaximizar(cb: (maximizada: boolean) => void): () => void
 }
 
 /** Canais IPC: nome do método → canal. Eventos usam o prefixo "evt:". */
 export const CANAIS_INVOKE = [
+  'lerLink',
   'adicionar',
   'adicionarMesmoAssim',
+  'adicionarComInfo',
   'remover',
-  'limparConcluidos',
   'iniciarFila',
   'pausarTodos',
   'pausar',
@@ -124,18 +112,9 @@ export const CANAIS_INVOKE = [
   'mover',
   'dividirPlaylist',
   'obterFila',
-  'obterBiblioteca',
-  'etiquetar',
-  'renomearNaBiblioteca',
-  'excluirDaBiblioteca',
-  'removerSemArquivo',
-  'criarColecao',
-  'renomearColecao',
-  'excluirColecao',
-  'duracaoNaBiblioteca',
-  'dividirArquivo',
-  'lerDados',
-  'exportarDados',
+  'obterHistorico',
+  'removerDoHistorico',
+  'limparHistorico',
   'obterGaleria',
   'adicionarGaleria',
   'pausarGaleria',
@@ -145,19 +124,21 @@ export const CANAIS_INVOKE = [
   'abrirArquivo',
   'abrirPasta',
   'mostrarNaPasta',
-  'renomear',
   'escolherPasta',
   'escolherArquivo',
   'lerArquivoLinks',
   'abrirLink',
   'copiar',
+  'lerClipboard',
+  'janelaMinimizar',
+  'janelaMaximizar',
+  'janelaFechar',
   'obterConfiguracoes',
   'salvarConfiguracoes',
   'restaurarPadroes',
   'obterSegredos',
   'salvarSegredos',
   'perfisNavegador',
-  'buscar',
   'ferramentas',
   'atualizarFerramenta',
   'alvosImpersonar',
@@ -170,12 +151,11 @@ export const CANAIS_INVOKE = [
 
 export const EVENTOS = {
   aoMudarFila: 'evt:fila',
+  aoMudarHistorico: 'evt:historico',
+  aoMudarGaleria: 'evt:galeria',
   aoNovoLog: 'evt:log',
   aoMudarFerramentas: 'evt:ferramentas',
   aoLinkCopiado: 'evt:link-copiado',
   aoDuplicados: 'evt:duplicados',
-  aoNavegar: 'evt:navegar',
-  aoMudarBiblioteca: 'evt:biblioteca',
-  aoProgressoDados: 'evt:dados-progresso',
-  aoMudarGaleria: 'evt:galeria'
+  aoMaximizar: 'evt:maximizar'
 } as const satisfies Partial<Record<keyof ApiSubaru, string>>

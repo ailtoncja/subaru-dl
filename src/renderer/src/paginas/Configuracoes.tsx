@@ -1,6 +1,7 @@
 import { FolderOpen, RefreshCw, RotateCcw, Search, X } from 'lucide-react'
 import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import type { CampoNome, Configuracoes as TConfig, Navegador, OpcoesDownload, Segredos } from '@shared/tipos'
+import { SelecaoOrganizar } from '../componentes/Destino'
 import { EditorLegendas, EditorPosProcesso, EditorQualidade } from '../componentes/EditorOpcoes'
 import { Dialogo, Etiquetas, Interruptor, Linha, LinhaInterruptor, Selecao } from '../componentes/ui'
 import { avisar, salvarConfig, useEstado } from '../estado'
@@ -47,7 +48,7 @@ function exemploNome(c: TConfig, audio: boolean): string {
     'canal-playlist': 'Canal\\Minha Playlist\\',
     'ano-mes': '2025\\03\\',
     'artista-album': 'Artista\\Álbum\\',
-    personalizado: c.subpastaPersonalizada.replace(/%\([^)]*\)s/g, '…') + '\\'
+    personalizado: c.padrao.subpastaPersonalizada.replace(/%\([^)]*\)s/g, '…') + '\\'
   }
   let nome =
     c.nome === 'titulo-qualidade'
@@ -60,7 +61,7 @@ function exemploNome(c: TConfig, audio: boolean): string {
   const prefixo = c.camposNoNome.map((campo) => `[${CAMPOS_NOME.find((x) => x.valor === campo)!.exemplo}]`).join(' ')
   if (prefixo) nome = `${prefixo} ${nome}`
   if (c.nomesSeguros) nome = nome.replace(/\s+/g, '_').replace(/[^\w.\-[\]()]/g, '')
-  return `${pastas[c.subpasta] ?? ''}${nome}.${ext}`
+  return `${pastas[c.padrao.subpasta] ?? ''}${nome}.${ext}`
 }
 
 /** Campo que grava a tecla pressionada no formato do Electron (ex.: CommandOrControl+Shift+A). */
@@ -208,26 +209,8 @@ export default function Configuracoes() {
         {
           texto: 'organizar subpastas playlist canal ano mês artista álbum',
           el: (
-            <Linha rotulo="Organizar em subpastas" coluna={c.subpasta === 'personalizado'}>
-              <div className="flex">
-                <Selecao
-                  valor={c.subpasta}
-                  aoMudar={(subpasta) => salvarConfig({ subpasta })}
-                  largura={220}
-                  opcoes={[
-                    { valor: 'nenhuma', nome: 'Sem subpastas' },
-                    { valor: 'playlist', nome: 'Por playlist' },
-                    { valor: 'canal', nome: 'Por canal' },
-                    { valor: 'canal-playlist', nome: 'Canal → playlist' },
-                    { valor: 'ano-mes', nome: 'Ano / mês' },
-                    { valor: 'artista-album', nome: 'Artista → álbum' },
-                    { valor: 'personalizado', nome: 'Personalizado' }
-                  ]}
-                />
-                {c.subpasta === 'personalizado' && (
-                  <CampoTexto mono valor={c.subpastaPersonalizada} aoSalvar={(subpastaPersonalizada) => salvarConfig({ subpastaPersonalizada })} />
-                )}
-              </div>
+            <Linha rotulo="Organizar em subpastas (padrão)" dica="Dá para mudar em cada download, na tela Início" coluna={c.padrao.subpasta === 'personalizado'}>
+              <SelecaoOrganizar o={c.padrao} mudar={mudarPadrao} />
             </Linha>
           )
         },
@@ -699,40 +682,6 @@ export default function Configuracoes() {
       ]
     },
     {
-      id: 'biblioteca',
-      titulo: 'Biblioteca',
-      itens: [
-        {
-          texto: 'biblioteca excluir apagar arquivo lixeira',
-          el: (
-            <Linha rotulo="Ao excluir da biblioteca" dica="Arquivos apagados vão para a Lixeira">
-              <Selecao
-                valor={c.excluirArquivo}
-                aoMudar={(excluirArquivo) => salvarConfig({ excluirArquivo })}
-                largura={230}
-                opcoes={[
-                  { valor: 'perguntar', nome: 'Perguntar sempre' },
-                  { valor: 'sempre', nome: 'Apagar o arquivo também' },
-                  { valor: 'nunca', nome: 'Só tirar da biblioteca' }
-                ]}
-              />
-            </Linha>
-          )
-        },
-        {
-          texto: 'coleções automáticas playlist',
-          el: (
-            <LinhaInterruptor
-              rotulo="Criar coleções para playlists"
-              dica="Cada playlist baixada vira uma coleção na biblioteca"
-              ligado={c.colecoesAutomaticas}
-              aoMudar={(colecoesAutomaticas) => salvarConfig({ colecoesAutomaticas })}
-            />
-          )
-        }
-      ]
-    },
-    {
       id: 'galeria',
       titulo: 'Galeria',
       itens: [
@@ -749,6 +698,22 @@ export default function Configuracoes() {
               >
                 <FolderOpen /> Escolher…
               </button>
+            </Linha>
+          )
+        },
+        {
+          texto: 'galeria organizar subpastas site perfil mesma pasta',
+          el: (
+            <Linha rotulo="Organizar a galeria">
+              <Selecao
+                valor={c.galeriaOrganizar}
+                aoMudar={(galeriaOrganizar) => salvarConfig({ galeriaOrganizar })}
+                largura={240}
+                opcoes={[
+                  { valor: 'padrao', nome: 'Por site e perfil' },
+                  { valor: 'plana', nome: 'Tudo na mesma pasta' }
+                ]}
+              />
             </Linha>
           )
         },
@@ -880,10 +845,10 @@ export default function Configuracoes() {
     .filter((s) => s.itens.length)
 
   return (
-    <>
+    <div className="pagina">
       <div className="cabecalho">
         <h1>Configurações</h1>
-        <div className="caixa-link flex" style={{ width: 300, border: '1px solid var(--border)', borderRadius: 8, padding: '0 10px', background: 'var(--surface)' }}>
+        <div className="busca" style={{ maxWidth: 320 }}>
           <Search width={16} className="muted" />
           <input
             className="flex-1"
@@ -899,7 +864,7 @@ export default function Configuracoes() {
           )}
         </div>
       </div>
-      <div className="pagina">
+      <div>
         <div className="config">
           {!termo && (
             <nav className="indice">
@@ -951,6 +916,6 @@ export default function Configuracoes() {
           Todas as configurações voltam ao original. A fila, o histórico e as senhas guardadas continuam.
         </Dialogo>
       )}
-    </>
+    </div>
   )
 }

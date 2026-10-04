@@ -19,10 +19,8 @@ Legenda: `[ ]` a fazer · `[x]` pronto
 - [x] 3. Importar `.txt` com links e arrastar e soltar
 - [x] 4. Monitorar a área de transferência
 - [x] 5. Atalhos globais (adicionar à fila / baixar a fila / adicionar e baixar já)
-- [x] 6. Busca no YouTube dentro do app, com filtros
 - [x] 7. Link com vídeo + playlist → baixar só o vídeo
 - [x] 8. Detectar já baixados (perguntar / pular / permitir)
-- [x] 9. Guia rápido de dicas
 
 ### B. Qualidade e formato
 - [x] 10. Qualidade padrão 360p → 8K / Melhor
@@ -105,28 +103,23 @@ Legenda: `[ ]` a fazer · `[x]` pronto
 
 ---
 
-## Fase 2 — Biblioteca e dados ✅
-
-### L. Biblioteca
-- [x] 66. Biblioteca com busca, ordenação e filtros
-- [x] 67. Tags e coleções
-- [x] 68. Baixar de novo, renomear, excluir (opção de apagar o arquivo)
-- [x] 69. Avisar quando o arquivo sumiu
-- [x] 70. Dividir arquivo em partes a cada X minutos
-
-### M. Dados
-- [x] 72. Baixar só informações (JSON, descrição, comentários, miniatura, legendas)
-- [x] 73. Exportar lista de playlist/canal (CSV, Excel, JSON, Markdown…)
-- [x] 75. Ver detalhes do vídeo (views, likes, capítulos, descrição)
-
----
+## Fase 2 — Histórico e opções por download ✅
+- [x] Histórico em Downloads → Concluídos (Reproduzir, Abrir na pasta, baixar de novo)
+- [x] 75. Detalhes do vídeo (em Opções avançadas)
+- [x] Salvar cada download em uma pasta diferente (vídeos e galeria)
+- [x] Organizar por playlist, canal, canal → playlist, ano/mês, artista → álbum em cada download
 
 ## Fase 3 — Galeria ✅
 - [x] 74. Galeria de imagens com gallery-dl (Instagram, Twitter, artistas, mangás)
 
 ---
 
+## Interface (v0.3)
+Refeita a partir das imagens de referência: barra de título própria, Início com prévia do link,
+Downloads com fila e histórico, Playlists & Lote, Galeria, Logs, Dependências e Configurações.
+
 ## Fora do escopo (removidos)
+6 busca no YouTube · 9 guia de dicas · 66–70 biblioteca (tags, coleções, dividir) · 72–73 página Dados ·
 23 limite de velocidade · 24 agendar downloads · 34 seguir canais · 40 pular lives · 41 agendar live ·
 48 SponsorBlock · 71 player embutido · 76 resumo com IA · 77 edição por chat com IA · 78 editor de legendas ·
 79 extensão do navegador · 80 Telegram · 81 plugins · 82 CLI · 85 notificações · 90 temas (só escuro) ·

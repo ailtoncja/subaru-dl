@@ -4,15 +4,14 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'no
 import { dirname, join } from 'node:path'
 import type { ApiSubaru } from '@shared/api'
 import { EVENTOS } from '@shared/api'
-import * as biblioteca from './biblioteca'
 import * as cfg from './configuracoes'
-import * as dados from './dados'
 import * as galeria from './galeria'
 import * as ferramentas from './ferramentas'
 import * as fila from './fila'
+import * as historico from './historico'
 import * as logs from './logs'
 import * as sistema from './sistema'
-import { buscarNoYoutube } from './ytdlp'
+import { buscarInfo } from './ytdlp'
 
 let janela: BrowserWindow | null = null
 let saindo = false
@@ -37,14 +36,18 @@ function criarJanela() {
     show: false,
     title: 'Subaru DL',
     icon: sistema.iconeApp(),
-    backgroundColor: '#0c1430',
-    autoHideMenuBar: true,
+    backgroundColor: '#0d121b',
+    // Sem a moldura do Windows: a barra de título é desenhada pela interface
+    frame: false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: true,
       contextIsolation: true
     }
   })
+
+  janela.on('maximize', () => enviar(EVENTOS.aoMaximizar, true))
+  janela.on('unmaximize', () => enviar(EVENTOS.aoMaximizar, false))
 
   janela.on('ready-to-show', () => {
     if (!sistema.iniciouMinimizado() || !sistema.temBandeja()) janela?.show()
@@ -79,12 +82,16 @@ function criarJanela() {
 type Handlers = { [K in keyof ApiSubaru as K extends `ao${string}` ? never : K]: ApiSubaru[K] }
 
 const handlers: Handlers = {
-  adicionar: async (urls, opcoes, iniciar) => fila.adicionar(urls, opcoes, iniciar),
-  adicionarMesmoAssim: async (urls, opcoes) => {
-    fila.adicionar(urls, opcoes, false, true)
+  lerLink: async (url) => {
+    const info = await buscarInfo(url, cfg.configuracoes(), cfg.obterSegredos(), null)
+    return { info, duplicado: historico.procurarDuplicados([url]).get(url) ?? null }
   },
+  adicionar: async (urls, opcoes, iniciar) => fila.adicionar(urls, opcoes, iniciar),
+  adicionarMesmoAssim: async (urls, opcoes, iniciar) => {
+    fila.adicionar(urls, opcoes, iniciar, true)
+  },
+  adicionarComInfo: async (url, info, opcoes, iniciar) => fila.adicionarComInfo(url, info, opcoes, iniciar),
   remover: async (ids) => fila.remover(ids),
-  limparConcluidos: async () => fila.limparConcluidos(),
   iniciarFila: async () => fila.iniciarFila(),
   pausarTodos: async () => fila.pausarTodos(),
   pausar: async (id) => fila.pausar(id),
@@ -96,32 +103,12 @@ const handlers: Handlers = {
   dividirPlaylist: async (id) => fila.dividirPlaylist(id),
   obterFila: async () => fila.fila(),
 
-  obterBiblioteca: async () => biblioteca.listarBiblioteca(),
-  etiquetar: async (id, tags, colecoes) => biblioteca.etiquetar(id, tags, colecoes),
-  renomearNaBiblioteca: async (id, nome) => biblioteca.renomearNaBiblioteca(id, nome),
-  excluirDaBiblioteca: async (ids, apagar) => biblioteca.excluirDaBiblioteca(ids, apagar),
-  removerSemArquivo: async () => biblioteca.removerSemArquivo(),
-  criarColecao: async (nome) => biblioteca.criarColecao(nome),
-  renomearColecao: async (id, nome) => biblioteca.renomearColecao(id, nome),
-  excluirColecao: async (id) => biblioteca.excluirColecao(id),
-  duracaoNaBiblioteca: async (id) => biblioteca.duracaoNaBiblioteca(id),
-  dividirArquivo: async (id, cortes, apagar) => biblioteca.dividirArquivo(id, cortes, apagar),
-
-  lerDados: async (fonte, entrada, limite, detalhado) =>
-    dados.lerDados(fonte, entrada, limite, detalhado, cfg.configuracoes(), cfg.obterSegredos(), (n) => enviar(EVENTOS.aoProgressoDados, n)),
-  exportarDados: async (linhas, campos, formato) => {
-    const r = await dialog.showSaveDialog(janela!, {
-      defaultPath: `subaru-dl-dados-${new Date().toISOString().slice(0, 10)}.${formato}`,
-      filters: [{ name: formato.toUpperCase(), extensions: [formato] }]
-    })
-    if (r.canceled || !r.filePath) return null
-    dados.salvarExportacao(r.filePath, dados.gerarExportacao(linhas, campos, formato))
-    logs.logar('info', `Dados exportados: ${r.filePath}`)
-    return r.filePath
-  },
+  obterHistorico: async () => historico.listarHistorico(),
+  removerDoHistorico: async (ids) => historico.removerDoHistorico(ids),
+  limparHistorico: async () => historico.limparHistorico(),
 
   obterGaleria: async () => galeria.listarGaleria(),
-  adicionarGaleria: async (urls) => galeria.adicionarGaleria(urls),
+  adicionarGaleria: async (urls, pasta, organizar) => galeria.adicionarGaleria(urls, pasta, organizar),
   pausarGaleria: async (id) => galeria.pausarGaleria(id),
   retomarGaleria: async (id) => galeria.retomarGaleria(id),
   removerGaleria: async (ids) => galeria.removerGaleria(ids),
@@ -140,7 +127,6 @@ const handlers: Handlers = {
     if (existsSync(caminho) && !statSync(caminho).isDirectory()) shell.showItemInFolder(caminho)
     else void shell.openPath(existsSync(caminho) ? caminho : dirname(caminho))
   },
-  renomear: async (id, nome) => fila.renomear(id, nome),
   escolherPasta: async (atual) => {
     const r = await dialog.showOpenDialog(janela!, { defaultPath: atual, properties: ['openDirectory', 'createDirectory'] })
     return r.canceled ? null : r.filePaths[0]
@@ -161,6 +147,14 @@ const handlers: Handlers = {
     if (/^https?:/.test(url)) await shell.openExternal(url)
   },
   copiar: async (texto) => clipboard.writeText(texto),
+  lerClipboard: async () => clipboard.readText(),
+
+  janelaMinimizar: async () => janela?.minimize(),
+  janelaMaximizar: async () => {
+    if (janela?.isMaximized()) janela.unmaximize()
+    else janela?.maximize()
+  },
+  janelaFechar: async () => janela?.close(),
 
   obterConfiguracoes: async () => cfg.configuracoes(),
   salvarConfiguracoes: async (parcial) => cfg.salvarConfiguracoes(parcial),
@@ -168,8 +162,6 @@ const handlers: Handlers = {
   obterSegredos: async () => cfg.obterSegredos(),
   salvarSegredos: async (s) => cfg.salvarSegredos(s),
   perfisNavegador: async (navegador) => perfisDoNavegador(navegador),
-
-  buscar: async (termo, filtros, limite) => buscarNoYoutube(termo, filtros, limite, cfg.configuracoes(), cfg.obterSegredos()),
 
   ferramentas: async () => ferramentas.verificarVersoes(),
   atualizarFerramenta: async (nome) => ferramentas.atualizarFerramenta(nome),
@@ -280,7 +272,7 @@ app.whenReady().then(() => {
   logs.aoLogar((e) => enviar(EVENTOS.aoNovoLog, e))
   fila.aoMudarFila((f) => enviar(EVENTOS.aoMudarFila, f))
   ferramentas.aoMudarFerramentas((f) => enviar(EVENTOS.aoMudarFerramentas, f))
-  biblioteca.aoMudarBiblioteca((b) => enviar(EVENTOS.aoMudarBiblioteca, b))
+  historico.aoMudarHistorico((h) => enviar(EVENTOS.aoMudarHistorico, h))
   galeria.aoMudarGaleria((g) => enviar(EVENTOS.aoMudarGaleria, g))
   cfg.aoMudarConfiguracoes(() => aplicarConfiguracoesDeSistema())
 
@@ -305,7 +297,7 @@ app.on('before-quit', () => {
   saindo = true
   fila.encerrarTudo()
   galeria.encerrarGaleria()
-  biblioteca.salvarBibliotecaAgora()
+  historico.salvarHistoricoAgora()
 })
 
 app.on('window-all-closed', () => {

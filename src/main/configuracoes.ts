@@ -33,7 +33,8 @@ export function opcoesPadrao(): OpcoesDownload {
     limitePlaylist: 0,
     ordemInvertida: false,
     pasta: null,
-    somenteInfo: null
+    subpasta: 'nenhuma',
+    subpastaPersonalizada: '%(uploader)s'
   }
 }
 
@@ -42,8 +43,6 @@ function configuracoesPadrao(): Configuracoes {
     padrao: opcoesPadrao(),
     pastaVideo: join(app.getPath('videos'), 'Subaru DL'),
     pastaAudio: join(app.getPath('music'), 'Subaru DL'),
-    subpasta: 'nenhuma',
-    subpastaPersonalizada: '%(uploader)s',
     nome: 'titulo',
     nomePersonalizado: '%(title)s [%(id)s]',
     camposNoNome: [],
@@ -76,13 +75,11 @@ function configuracoesPadrao(): Configuracoes {
     atualizarFerramentas: true,
     canalYtdlp: 'stable',
     atualizarApp: true,
-    guiaVisto: false,
-    excluirArquivo: 'perguntar',
-    colecoesAutomaticas: true,
     pastaGaleria: join(app.getPath('pictures'), 'Subaru DL'),
     galeriaSimultaneos: 2,
     galeriaPularBaixados: true,
     galeriaIntervalo: '',
+    galeriaOrganizar: 'padrao',
     galeriaPausa: 0
   }
 }

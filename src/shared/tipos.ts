@@ -60,18 +60,9 @@ export interface OpcoesDownload {
 
   /** Pasta sobrescrita só para este item. null = usa a das configurações. */
   pasta: string | null
-
-  /** Baixar só as informações, sem o vídeo (item 72). null = download normal. */
-  somenteInfo: OpcoesInfo | null
-}
-
-export interface OpcoesInfo {
-  json: boolean
-  descricao: boolean
-  comentarios: boolean
-  miniatura: boolean
-  legendas: boolean
-  idiomasLegenda: string[]
+  /** Organizar em subpastas por playlist, canal… */
+  subpasta: PresetSubpasta
+  subpastaPersonalizada: string
 }
 
 export type StatusItem =
@@ -201,8 +192,6 @@ export interface Configuracoes {
   // Pastas e nomes
   pastaVideo: string
   pastaAudio: string
-  subpasta: PresetSubpasta
-  subpastaPersonalizada: string
   nome: PresetNome
   nomePersonalizado: string
   camposNoNome: CampoNome[]
@@ -258,17 +247,13 @@ export interface Configuracoes {
   atualizarFerramentas: boolean
   canalYtdlp: CanalAtualizacao
   atualizarApp: boolean
-  guiaVisto: boolean
-
-  // Biblioteca
-  excluirArquivo: AcaoExcluir
-  colecoesAutomaticas: boolean
 
   // Galeria
   pastaGaleria: string
   galeriaSimultaneos: number
   galeriaPularBaixados: boolean
   galeriaIntervalo: string
+  galeriaOrganizar: OrganizarGaleria
   /** Segundos de pausa entre um arquivo e outro (evita bloqueio em alguns sites) */
   galeriaPausa: number
 }
@@ -283,8 +268,8 @@ export interface Segredos {
   senhaProxy: string
 }
 
-/** Um download na biblioteca (categoria L). */
-export interface ItemBiblioteca {
+/** Um arquivo baixado (aparece em Downloads → Concluídos e detecta duplicados). */
+export interface EntradaHistorico {
   id: string
   idMidia: string
   site: string
@@ -293,69 +278,30 @@ export interface ItemBiblioteca {
   canal: string | null
   duracao: number | null
   miniatura: string | null
-  dataUpload: string | null
-  views: number | null
-  likes: number | null
   modo: Modo
   /** Extensão do arquivo (mp4, mp3…) */
   formato: string
   /** "1080p", "320k"… */
   qualidade: string | null
-  arquivos: string[]
+  arquivo: string
   tamanho: number
   baixadoEm: number
-  playlist: string | null
-  tags: string[]
-  colecoes: string[]
-  /** Preenchido ao listar: o arquivo ainda existe no disco? (item 69) */
+  /** Preenchido ao listar: o arquivo ainda existe no disco? */
   arquivoExiste?: boolean
 }
-
-export interface Colecao {
-  id: string
-  nome: string
-  criadaEm: number
-}
-
-export interface Biblioteca {
-  itens: ItemBiblioteca[]
-  colecoes: Colecao[]
-}
-
-export type AcaoExcluir = 'perguntar' | 'sempre' | 'nunca'
-
-// ---------- Exportação de dados (item 73) ----------
-
-export type FonteDados = 'auto' | 'playlist' | 'canal' | 'busca' | 'links'
-export type FormatoExportacao = 'csv' | 'xlsx' | 'json' | 'md' | 'html' | 'txt'
-
-export interface LinhaDados {
-  id: string
-  url: string
-  titulo: string
-  canal: string | null
-  site: string
-  duracao: number | null
-  dataUpload: string | null
-  views: number | null
-  likes: number | null
-  comentarios: number | null
-  descricao: string | null
-  tags: string[]
-  miniatura: string | null
-}
-
-export type CampoDados = 'titulo' | 'url' | 'canal' | 'site' | 'duracao' | 'duracaoSegundos' | 'dataUpload' | 'views' | 'likes' | 'comentarios' | 'descricao' | 'tags' | 'miniatura' | 'id'
 
 // ---------- Galeria (item 74) ----------
 
 export type StatusGaleria = 'aguardando' | 'baixando' | 'pausado' | 'concluido' | 'erro'
+
+export type OrganizarGaleria = 'padrao' | 'plana'
 
 export interface ItemGaleria {
   id: string
   url: string
   status: StatusGaleria
   pasta: string
+  organizar: OrganizarGaleria
   arquivos: number
   ultimoArquivo: string | null
   pulados: number
@@ -391,21 +337,4 @@ export interface EstadoFerramenta {
   versao: string | null
   atualizando: boolean
   mensagem: string | null
-}
-
-export interface ResultadoBusca {
-  id: string
-  url: string
-  titulo: string
-  canal: string | null
-  duracao: number | null
-  views: number | null
-  miniatura: string | null
-}
-
-export interface FiltrosBusca {
-  data: 'qualquer' | 'hoje' | 'semana' | 'mes' | 'ano'
-  duracao: 'qualquer' | 'curto' | 'medio' | 'longo'
-  ordem: 'relevancia' | 'views' | 'data' | 'avaliacao'
-  recursos: Array<'aoVivo' | '4k' | 'hd' | 'legendas' | 'cc' | '360' | 'vr180' | '3d' | 'hdr'>
 }

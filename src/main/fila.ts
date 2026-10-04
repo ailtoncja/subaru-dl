@@ -1,14 +1,12 @@
 // Gerenciador da fila: busca informações, controla quantos downloads rodam ao mesmo tempo,
 // pausa/retoma, tenta de novo quando falha e salva a fila em disco.
 import { execFile, type ChildProcess } from 'node:child_process'
-import { existsSync, renameSync } from 'node:fs'
-import { basename, dirname, extname, join } from 'node:path'
 import { createInterface } from 'node:readline'
-import type { Duplicado, ItemFila, MidiaBaixada, OpcoesDownload, Progresso, StatusItem } from '@shared/tipos'
+import type { Duplicado, InfoMidia, ItemFila, MidiaBaixada, OpcoesDownload, Progresso, StatusItem } from '@shared/tipos'
 import { gravadorAdiado, lerJson } from './armazenamento'
 import { configuracoes, obterSegredos } from './configuracoes'
 import { executar } from './ferramentas'
-import { procurarDuplicados, registrarDownload } from './biblioteca'
+import { procurarDuplicados, registrarDownload } from './historico'
 import { dicaParaErro, logar } from './logs'
 import { argsDownload, buscarInfo, comandoParaLog, MARCA_ARQUIVO, MARCA_POS, MARCA_PROGRESSO, nomeSite } from './ytdlp'
 
@@ -152,8 +150,7 @@ export function adicionar(
   let lista = normalizarUrls(urls)
   const duplicados: Duplicado[] = []
   const acao = configuracoes().acaoDuplicado
-  // Baixar só as informações de algo já baixado é normal: não conta como duplicado
-  if (!ignorarDuplicados && acao !== 'permitir' && !opcoes?.somenteInfo) {
+  if (!ignorarDuplicados && acao !== 'permitir') {
     const achados = procurarDuplicados(lista)
     if (achados.size) {
       lista = lista.filter((u) => !achados.has(u))
@@ -162,11 +159,22 @@ export function adicionar(
     }
   }
   const novos = lista.map((url) => novoItem(url, opcoes))
-  if (iniciar) for (const n of novos) prioritarios.add(n.id)
+  // Um link: começa na hora. Vários: liga a fila, respeitando o limite de downloads ao mesmo tempo
+  if (iniciar && novos.length === 1) prioritarios.add(novos[0].id)
+  else if (iniciar && novos.length) filaRodando = true
   itens.push(...novos)
   mudou(true)
   buscarProximasInfos()
   return { adicionados: novos.length, duplicados }
+}
+
+/** Adiciona um link cuja informação já foi lida (prévia da tela Início): não precisa ler de novo. */
+export function adicionarComInfo(url: string, info: InfoMidia, opcoes: Partial<OpcoesDownload>, iniciar: boolean): void {
+  const novo = { ...novoItem(url, opcoes), info, status: 'pronto' as const }
+  itens.push(novo)
+  if (iniciar) prioritarios.add(novo.id)
+  mudou(true)
+  agendar()
 }
 
 function buscarProximasInfos() {
@@ -260,7 +268,7 @@ function iniciarDownload(id: string) {
     dicaErro: null,
     arquivos: ehPlaylist ? alvo.arquivos : [],
     midias: ehPlaylist ? alvo.midias : [],
-    progresso: { ...PROGRESSO_ZERO, etapa: alvo.opcoes.somenteInfo ? 'Baixando informações' : 'Iniciando' }
+    progresso: { ...PROGRESSO_ZERO, etapa: 'Iniciando' }
   })
 
   const proc = executar('yt-dlp.exe', args)
@@ -302,19 +310,19 @@ function iniciarDownload(id: string) {
     // Pausado pelo usuário: o processo foi encerrado de propósito
     if (atual.status === 'pausado') return agendar()
 
-    if (codigo === 0) {
-      const concluido: Partial<ItemFila> = {
-        status: 'concluido',
-        concluidoEm: Date.now(),
-        progresso: { ...atual.progresso, porcentagem: 100, etapa: null, velocidade: null, eta: null }
-      }
-      if (!atual.arquivos.length && avisos.length && !atual.opcoes.somenteInfo) {
-        // Terminou sem baixar nada (ex.: tudo filtrado pelos filtros de entrada)
-        concluido.erro = 'Nada foi baixado. Veja os avisos nos logs.'
-      }
-      definir(id, concluido)
-      registrarDownload({ ...atual, ...concluido } as ItemFila)
+    if (codigo === 0 && !atual.arquivos.length) {
+      // Terminou sem baixar nada (ex.: tudo filtrado pelos filtros de entrada)
+      definir(id, {
+        status: 'erro',
+        erro: avisos.length ? 'Nada foi baixado. Veja os avisos nos logs.' : 'Nada foi baixado.',
+        dicaErro: 'Confira os filtros de entrada em Configurações.'
+      })
+    } else if (codigo === 0) {
+      // Concluído sai da fila e vai para o histórico (Downloads → Concluídos)
+      registrarDownload(atual)
       logar('info', `Concluído: ${atual.info?.titulo ?? atual.url}`, id)
+      itens = itens.filter((i) => i.id !== id)
+      mudou(true)
     } else {
       falhou(id, ultimoErro || `O yt-dlp terminou com o código ${codigo}`)
     }
@@ -522,11 +530,6 @@ export function remover(ids: string[]): void {
   agendar()
 }
 
-export function limparConcluidos(): void {
-  itens = itens.filter((i) => i.status !== 'concluido')
-  mudou(true)
-}
-
 export function atualizarOpcoes(id: string, opcoes: Partial<OpcoesDownload>): void {
   const atual = item(id)
   if (!atual) return
@@ -585,26 +588,6 @@ export function selecionados(spec: string, total: number, limite = 0): Set<numbe
     }
   }
   return resultado
-}
-
-export function renomear(id: string, novoNome: string): { ok: boolean; erro?: string } {
-  const atual = item(id)
-  const arquivo = atual?.arquivos[0]
-  if (!atual || !arquivo) return { ok: false, erro: 'O arquivo ainda não existe' }
-  if (atual.arquivos.length > 1) return { ok: false, erro: 'Renomear funciona só em downloads de um arquivo' }
-  const limpo = novoNome.trim().replace(/[<>:"/\\|?*]/g, '_')
-  if (!limpo) return { ok: false, erro: 'Nome vazio' }
-  const destino = join(dirname(arquivo), limpo + extname(arquivo))
-  if (destino === arquivo) return { ok: true }
-  if (existsSync(destino)) return { ok: false, erro: 'Já existe um arquivo com esse nome' }
-  try {
-    renameSync(arquivo, destino)
-    definir(id, { arquivos: [destino] })
-    logar('info', `Renomeado: ${basename(arquivo)} → ${basename(destino)}`, id)
-    return { ok: true }
-  } catch (e) {
-    return { ok: false, erro: e instanceof Error ? e.message : String(e) }
-  }
 }
 
 /** Ao fechar o app: para tudo e deixa como pausado, para retomar na próxima vez. */
