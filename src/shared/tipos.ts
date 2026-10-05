@@ -308,6 +308,18 @@ export interface EntradaHistorico {
 export type StatusGaleria = 'aguardando' | 'baixando' | 'pausado' | 'concluido' | 'erro'
 
 /** plana = sem subpastas · site = uma pasta por site · padrao = site → perfil (do gallery-dl) · personalizado = formato próprio */
+/** Resultado de "gerar cookies.txt a partir do navegador". */
+export interface ResultadoCookies {
+  ok: boolean
+  /** Cookies gravados no arquivo */
+  salvos: number
+  /** Cookies que o navegador tinha no total */
+  total: number
+  sites: number
+  arquivo: string
+  erro: string | null
+}
+
 export type OrganizarGaleria = 'plana' | 'site' | 'perfil' | 'padrao' | 'personalizado'
 
 /** Um arquivo listado na prévia da galeria. `indice` é a posição usada pelo --range do gallery-dl. */

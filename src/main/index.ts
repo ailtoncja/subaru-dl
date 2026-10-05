@@ -1,11 +1,12 @@
 import { app, BrowserWindow, clipboard, dialog, ipcMain, protocol, shell } from 'electron'
 import { autoUpdater } from 'electron-updater'
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { ApiSubaru } from '@shared/api'
 import { EVENTOS } from '@shared/api'
 import { ESQUEMA_MINIATURA } from '@shared/miniatura'
 import * as cfg from './configuracoes'
+import { arquivoCookies, exportarCookies } from './cookies'
 import * as galeria from './galeria'
 import * as ferramentas from './ferramentas'
 import * as fila from './fila'
@@ -173,6 +174,14 @@ const handlers: Handlers = {
   obterSegredos: async () => cfg.obterSegredos(),
   salvarSegredos: async (s) => cfg.salvarSegredos(s),
   perfisNavegador: async (navegador) => perfisDoNavegador(navegador),
+  exportarCookies: async (navegador, perfil, soSites) => exportarCookies(navegador, perfil, soSites),
+  salvarCookiesComo: async () => {
+    if (!existsSync(arquivoCookies())) return null
+    const r = await dialog.showSaveDialog(janela!, { defaultPath: 'cookies.txt', filters: [{ name: 'cookies.txt', extensions: ['txt'] }] })
+    if (r.canceled || !r.filePath) return null
+    copyFileSync(arquivoCookies(), r.filePath)
+    return r.filePath
+  },
 
   ferramentas: async () => ferramentas.verificarVersoes(),
   atualizarFerramenta: async (nome) => ferramentas.atualizarFerramenta(nome),
