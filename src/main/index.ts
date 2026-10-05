@@ -6,6 +6,7 @@ import type { ApiSubaru } from '@shared/api'
 import { EVENTOS } from '@shared/api'
 import { ESQUEMA_MINIATURA } from '@shared/miniatura'
 import * as cfg from './configuracoes'
+import { enviarCookiesAoCelular, procurarCelulares } from './celular'
 import { arquivoCookies, exportarCookies } from './cookies'
 import * as galeria from './galeria'
 import * as ferramentas from './ferramentas'
@@ -175,6 +176,8 @@ const handlers: Handlers = {
   salvarSegredos: async (s) => cfg.salvarSegredos(s),
   perfisNavegador: async (navegador) => perfisDoNavegador(navegador),
   exportarCookies: async (navegador, perfil, soSites) => exportarCookies(navegador, perfil, soSites),
+  procurarCelulares: async () => procurarCelulares(),
+  enviarCookiesAoCelular: async (endereco, codigo) => enviarCookiesAoCelular(endereco, codigo),
   salvarCookiesComo: async () => {
     if (!existsSync(arquivoCookies())) return null
     const r = await dialog.showSaveDialog(janela!, { defaultPath: 'cookies.txt', filters: [{ name: 'cookies.txt', extensions: ['txt'] }] })

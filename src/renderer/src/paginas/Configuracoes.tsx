@@ -1,6 +1,6 @@
-import { Cookie, FolderOpen, RefreshCw, RotateCcw, Search, X } from 'lucide-react'
+import { Cookie, FolderOpen, RefreshCw, RotateCcw, Search, Send, Smartphone, X } from 'lucide-react'
 import { Fragment, useEffect, useState, type ReactNode } from 'react'
-import type { CampoNome, Configuracoes as TConfig, Navegador, OpcoesDownload, Segredos } from '@shared/tipos'
+import type { CampoNome, CelularEncontrado, Configuracoes as TConfig, Navegador, OpcoesDownload, Segredos } from '@shared/tipos'
 import { SelecaoOrganizar, SelecaoOrganizarGaleria } from '../componentes/Destino'
 import { EditorLegendas, EditorPosProcesso, EditorQualidade } from '../componentes/EditorOpcoes'
 import { Dialogo, Etiquetas, Interruptor, Linha, LinhaInterruptor, Selecao } from '../componentes/ui'
@@ -140,11 +140,39 @@ export default function Configuracoes() {
   const [gerandoCookies, setGerandoCookies] = useState(false)
   const [soSitesDeVideo, setSoSitesDeVideo] = useState(true)
   const [resultadoCookies, setResultadoCookies] = useState<{ ok: boolean; texto: string } | null>(null)
+  const [celulares, setCelulares] = useState<CelularEncontrado[] | null>(null)
+  const [procurandoCelular, setProcurandoCelular] = useState(false)
+  const [enderecoCelular, setEnderecoCelular] = useState('')
+  const [codigoCelular, setCodigoCelular] = useState('')
+  const [enviandoCelular, setEnviandoCelular] = useState(false)
+  const [resultadoCelular, setResultadoCelular] = useState<{ ok: boolean; texto: string } | null>(null)
 
   useEffect(() => void window.api.obterSegredos().then(setSegredos), [])
   useEffect(() => {
     void window.api.perfisNavegador(c.cookies.navegador).then(setPerfis)
   }, [c.cookies.navegador])
+
+  const procurarCelular = async () => {
+    setProcurandoCelular(true)
+    setResultadoCelular(null)
+    const achados = await window.api.procurarCelulares()
+    setProcurandoCelular(false)
+    setCelulares(achados)
+    if (achados.length === 1) setEnderecoCelular(achados[0].porta === 38475 ? achados[0].ip : `${achados[0].ip}:${achados[0].porta}`)
+  }
+
+  const enviarAoCelular = async () => {
+    setEnviandoCelular(true)
+    setResultadoCelular(null)
+    const r = await window.api.enviarCookiesAoCelular(enderecoCelular, codigoCelular)
+    setEnviandoCelular(false)
+    if (r.ok) {
+      setCodigoCelular('')
+      setResultadoCelular({ ok: true, texto: `Pronto: o celular recebeu ${r.cookies} cookies de ${r.sites} sites.` })
+    } else {
+      setResultadoCelular({ ok: false, texto: r.erro ?? 'Não consegui enviar.' })
+    }
+  }
 
   /** Lê os cookies do navegador, grava o cookies.txt e já passa a usá-lo. */
   const gerarCookies = async () => {
@@ -572,6 +600,67 @@ export default function Configuracoes() {
               {resultadoCookies && (
                 <div className="pequeno" style={{ marginTop: 8, color: resultadoCookies.ok ? 'var(--verde, #4ade80)' : 'var(--vermelho, #f87171)' }}>
                   {resultadoCookies.texto}
+                </div>
+              )}
+            </Linha>
+          )
+        },
+        {
+          texto: 'cookies enviar celular android telefone wifi receber',
+          el: (
+            <Linha
+              rotulo="Enviar para o celular"
+              dica='No celular, abra o Subaru DL → Ajustes → Contas e cookies → "Receber do PC pelo Wi-Fi". Ele mostra um código: é só digitar aqui. Os dois precisam estar no mesmo Wi-Fi. Se ainda não houver cookies.txt, ele é gerado a partir do navegador.'
+              coluna
+            >
+              <div className="flex" style={{ flexWrap: 'wrap', gap: 8 }}>
+                <button className="btn pequeno" disabled={procurandoCelular} onClick={procurarCelular}>
+                  {procurandoCelular ? <RefreshCw className="girando" /> : <Smartphone />} {procurandoCelular ? 'Procurando…' : 'Procurar celular'}
+                </button>
+                <input
+                  className="campo mono"
+                  style={{ width: 190 }}
+                  placeholder="Endereço (192.168.0.20)"
+                  value={enderecoCelular}
+                  onChange={(e) => setEnderecoCelular(e.target.value)}
+                />
+                <input
+                  className="campo mono"
+                  style={{ width: 150, textTransform: 'uppercase', letterSpacing: 2 }}
+                  placeholder="Código"
+                  maxLength={10}
+                  value={codigoCelular}
+                  onChange={(e) => setCodigoCelular(e.target.value)}
+                />
+                <button
+                  className="btn primario pequeno"
+                  disabled={enviandoCelular || !enderecoCelular.trim() || codigoCelular.replace(/[^a-z0-9]/gi, '').length < 8}
+                  onClick={enviarAoCelular}
+                >
+                  {enviandoCelular ? <RefreshCw className="girando" /> : <Send />} {enviandoCelular ? 'Enviando…' : 'Enviar cookies'}
+                </button>
+              </div>
+              {celulares && (
+                <div className="flex pequeno" style={{ flexWrap: 'wrap', gap: 8, marginTop: 8, alignItems: 'center' }}>
+                  {celulares.length === 0 ? (
+                    <span style={{ color: 'var(--vermelho, #f87171)' }}>
+                      Não achei nenhum celular. Abra a tela "Receber do PC" no celular e procure de novo (ou digite o endereço que ele mostra).
+                    </span>
+                  ) : (
+                    <>
+                      <span>{celulares.length === 1 ? 'Encontrado:' : 'Encontrados:'}</span>
+                      {celulares.map((cel) => (
+                        <button key={cel.ip} className="btn pequeno" onClick={() => setEnderecoCelular(cel.porta === 38475 ? cel.ip : `${cel.ip}:${cel.porta}`)}>
+                          <Smartphone /> {cel.nome} · {cel.ip}
+                        </button>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+              {resultadoCelular && (
+                <div className="pequeno" style={{ marginTop: 8, color: resultadoCelular.ok ? 'var(--verde, #4ade80)' : 'var(--vermelho, #f87171)' }}>
+                  {resultadoCelular.texto}
                 </div>
               )}
             </Linha>

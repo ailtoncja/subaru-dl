@@ -320,6 +320,21 @@ export interface ResultadoCookies {
   erro: string | null
 }
 
+/** Celular com o Subaru DL na tela "Receber do PC", achado na rede local. */
+export interface CelularEncontrado {
+  ip: string
+  porta: number
+  nome: string
+}
+
+export interface ResultadoEnvioCelular {
+  ok: boolean
+  /** Cookies que o celular recebeu */
+  cookies: number
+  sites: number
+  erro: string | null
+}
+
 export type OrganizarGaleria = 'plana' | 'site' | 'perfil' | 'padrao' | 'personalizado'
 
 /** Um arquivo listado na prévia da galeria. `indice` é a posição usada pelo --range do gallery-dl. */
