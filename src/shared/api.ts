@@ -12,7 +12,9 @@ import type {
   NomeFerramenta,
   OpcoesDownload,
   OrganizarGaleria,
+  CelularEncontrado,
   ResultadoCookies,
+  ResultadoEnvioCelular,
   Segredos
 } from './tipos'
 
@@ -80,6 +82,10 @@ export interface ApiSubaru {
   exportarCookies(navegador: string, perfil: string, soSites: boolean): Promise<ResultadoCookies>
   /** Copia o cookies.txt gerado para onde o usuário escolher (ex.: para levar ao celular). Devolve o destino. */
   salvarCookiesComo(): Promise<string | null>
+  /** Procura, na rede local, celulares com o Subaru DL esperando cookies */
+  procurarCelulares(): Promise<CelularEncontrado[]>
+  /** Manda o cookies.txt para o celular (cifrado com o código que aparece lá) */
+  enviarCookiesAoCelular(endereco: string, codigo: string): Promise<ResultadoEnvioCelular>
 
   // Ferramentas
   ferramentas(): Promise<EstadoFerramenta[]>
@@ -154,6 +160,8 @@ export const CANAIS_INVOKE = [
   'perfisNavegador',
   'exportarCookies',
   'salvarCookiesComo',
+  'procurarCelulares',
+  'enviarCookiesAoCelular',
   'ferramentas',
   'atualizarFerramenta',
   'alvosImpersonar',
