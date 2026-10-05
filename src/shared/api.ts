@@ -12,6 +12,7 @@ import type {
   NomeFerramenta,
   OpcoesDownload,
   OrganizarGaleria,
+  ResultadoCookies,
   Segredos
 } from './tipos'
 
@@ -75,6 +76,10 @@ export interface ApiSubaru {
   obterSegredos(): Promise<Segredos>
   salvarSegredos(segredos: Segredos): Promise<void>
   perfisNavegador(navegador: string): Promise<string[]>
+  /** Lê os cookies do navegador e grava um cookies.txt pronto para o yt-dlp e o gallery-dl */
+  exportarCookies(navegador: string, perfil: string, soSites: boolean): Promise<ResultadoCookies>
+  /** Copia o cookies.txt gerado para onde o usuário escolher (ex.: para levar ao celular). Devolve o destino. */
+  salvarCookiesComo(): Promise<string | null>
 
   // Ferramentas
   ferramentas(): Promise<EstadoFerramenta[]>
@@ -147,6 +152,8 @@ export const CANAIS_INVOKE = [
   'obterSegredos',
   'salvarSegredos',
   'perfisNavegador',
+  'exportarCookies',
+  'salvarCookiesComo',
   'ferramentas',
   'atualizarFerramenta',
   'alvosImpersonar',

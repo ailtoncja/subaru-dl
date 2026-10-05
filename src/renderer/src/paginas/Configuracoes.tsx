@@ -1,4 +1,4 @@
-import { FolderOpen, RefreshCw, RotateCcw, Search, X } from 'lucide-react'
+import { Cookie, FolderOpen, RefreshCw, RotateCcw, Search, X } from 'lucide-react'
 import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import type { CampoNome, Configuracoes as TConfig, Navegador, OpcoesDownload, Segredos } from '@shared/tipos'
 import { SelecaoOrganizar, SelecaoOrganizarGaleria } from '../componentes/Destino'
@@ -137,11 +137,28 @@ export default function Configuracoes() {
   const [alvos, setAlvos] = useState<string[]>([])
   const [atualizacao, setAtualizacao] = useState('')
   const [confirmarReset, setConfirmarReset] = useState(false)
+  const [gerandoCookies, setGerandoCookies] = useState(false)
+  const [soSitesDeVideo, setSoSitesDeVideo] = useState(true)
+  const [resultadoCookies, setResultadoCookies] = useState<{ ok: boolean; texto: string } | null>(null)
 
   useEffect(() => void window.api.obterSegredos().then(setSegredos), [])
   useEffect(() => {
-    if (c.cookies.origem === 'navegador') void window.api.perfisNavegador(c.cookies.navegador).then(setPerfis)
-  }, [c.cookies.origem, c.cookies.navegador])
+    void window.api.perfisNavegador(c.cookies.navegador).then(setPerfis)
+  }, [c.cookies.navegador])
+
+  /** Lê os cookies do navegador, grava o cookies.txt e já passa a usá-lo. */
+  const gerarCookies = async () => {
+    setGerandoCookies(true)
+    setResultadoCookies(null)
+    const r = await window.api.exportarCookies(c.cookies.navegador, c.cookies.perfil, soSitesDeVideo)
+    setGerandoCookies(false)
+    if (r.ok) {
+      await salvarConfig({ cookies: { ...c.cookies, origem: 'arquivo', arquivo: r.arquivo } })
+      setResultadoCookies({ ok: true, texto: `${r.salvos} cookies de ${r.sites} sites salvos. O programa já está usando esse arquivo.` })
+    } else {
+      setResultadoCookies({ ok: false, texto: r.erro ?? 'Não consegui gerar o cookies.txt.' })
+    }
+  }
 
   const mudarPadrao = (parcial: Partial<OpcoesDownload>) => salvarConfig({ padrao: { ...c.padrao, ...parcial } })
   const mudarSegredo = async (parcial: Partial<Segredos>) => {
@@ -518,6 +535,45 @@ export default function Configuracoes() {
                   { valor: 'arquivo', nome: 'De um cookies.txt' }
                 ]}
               />
+            </Linha>
+          )
+        },
+        {
+          texto: 'cookies txt gerar exportar automatico navegador celular',
+          el: (
+            <Linha
+              rotulo="Gerar cookies.txt"
+              dica="Lê os cookies do navegador e salva num cookies.txt pronto para usar (serve também para levar ao celular). O Firefox funciona aberto; no Chrome e no Edge, feche o navegador antes."
+              coluna
+            >
+              <div className="flex" style={{ flexWrap: 'wrap', gap: 8 }}>
+                <Selecao valor={c.cookies.navegador} aoMudar={(navegador) => salvarConfig({ cookies: { ...c.cookies, navegador, perfil: '' } })} opcoes={NAVEGADORES} largura={130} />
+                <Selecao
+                  valor={c.cookies.perfil}
+                  aoMudar={(perfil) => salvarConfig({ cookies: { ...c.cookies, perfil } })}
+                  largura={220}
+                  opcoes={[{ valor: '', nome: 'Perfil padrão' }, ...perfis.map((p) => ({ valor: p, nome: p }))]}
+                />
+                <button className="btn primario pequeno" disabled={gerandoCookies} onClick={gerarCookies}>
+                  {gerandoCookies ? <RefreshCw className="girando" /> : <Cookie />} {gerandoCookies ? 'Lendo o navegador…' : 'Gerar cookies.txt'}
+                </button>
+                <button className="btn pequeno" onClick={async () => {
+                  const destino = await window.api.salvarCookiesComo()
+                  if (destino) avisar('Cópia salva em ' + destino)
+                  else avisar('Gere o cookies.txt primeiro', 'erro')
+                }}>
+                  Salvar uma cópia…
+                </button>
+              </div>
+              <label className="flex" style={{ gap: 8, cursor: 'pointer', marginTop: 8 }}>
+                <input type="checkbox" checked={soSitesDeVideo} onChange={(e) => setSoSitesDeVideo(e.target.checked)} />
+                Só os sites de vídeo e imagem (YouTube, Instagram, X, TikTok, Twitch…) — recomendado
+              </label>
+              {resultadoCookies && (
+                <div className="pequeno" style={{ marginTop: 8, color: resultadoCookies.ok ? 'var(--verde, #4ade80)' : 'var(--vermelho, #f87171)' }}>
+                  {resultadoCookies.texto}
+                </div>
+              )}
             </Linha>
           )
         },
