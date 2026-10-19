@@ -1,6 +1,6 @@
 // Gera um cookies.txt a partir dos cookies do navegador (o yt-dlp lê o navegador e grava o arquivo).
 import { app } from 'electron'
-import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { ResultadoCookies } from '@shared/tipos'
 import { executarAteFim } from './ferramentas'
@@ -72,4 +72,72 @@ export async function exportarCookies(navegador: string, perfil: string, soSites
   } finally {
     rmSync(bruto, { force: true })
   }
+}
+
+
+/** Confere se o texto tem linhas de cookie no formato Netscape (domínio<TAB>…, 7 campos). */
+function pareceNetscape(texto: string): boolean {
+  return texto.split(/\r?\n/).some((l) => l.trim() && !l.startsWith('#') && l.split('\t').length >= 7)
+}
+
+/**
+ * Importa um cookies.txt (formato Netscape, ex.: exportado por uma extensão do navegador), valida, filtra
+ * se pedido e grava como o cookies que o programa usa. É o caminho para Chrome e Edge novos, que criptografam
+ * os cookies de um jeito que nenhum programa externo consegue ler.
+ */
+export function importarCookies(caminho: string, soSites: boolean): ResultadoCookies {
+  const destino = arquivoCookies()
+  const falha = (erro: string): ResultadoCookies => ({ ok: false, salvos: 0, total: 0, sites: 0, arquivo: destino, erro })
+  if (!caminho || !existsSync(caminho)) return falha('Arquivo não encontrado.')
+  let texto: string
+  try {
+    texto = readFileSync(caminho, 'utf8')
+  } catch {
+    return falha('Não consegui ler o arquivo.')
+  }
+  const cookies = texto.split(/\r?\n/).filter((l) => l.trim() && !l.startsWith('# ') && l.split('\t').length >= 7)
+  if (!cookies.length) return falha('Esse arquivo não parece um cookies.txt (formato Netscape, com tabulações).')
+  const mantidos = soSites ? cookies.filter((l) => deSite(dominioDaLinha(l))) : cookies
+  if (!mantidos.length) return falha('O arquivo não tem cookies de sites de vídeo. Desmarque "só sites de vídeo" para usar todos.')
+  const sites = new Set(mantidos.map(dominioDaLinha)).size
+  mkdirSync(app.getPath('userData'), { recursive: true })
+  const cabecalho = ['# Netscape HTTP Cookie File', '# Importado pelo Subaru DL. Contém logins: não compartilhe.', '']
+  writeFileSync(destino, [...cabecalho, ...mantidos].join('\n') + '\n', 'utf8')
+  logar('info', `Cookies importados de ${caminho}: ${mantidos.length} de ${cookies.length} salvos (${sites} sites)`)
+  return { ok: true, salvos: mantidos.length, total: cookies.length, sites, arquivo: destino, erro: null }
+}
+
+/**
+ * Procura na pasta Downloads o cookies.txt mais recente (da última hora) que uma extensão tenha exportado,
+ * para o usuário não precisar caçar o arquivo. Devolve o caminho ou null.
+ */
+export function acharCookiesBaixado(): string | null {
+  let dir: string
+  try {
+    dir = app.getPath('downloads')
+  } catch {
+    return null
+  }
+  if (!existsSync(dir)) return null
+  let nomes: string[]
+  try {
+    nomes = readdirSync(dir)
+  } catch {
+    return null
+  }
+  const limite = Date.now() - 60 * 60 * 1000
+  let melhor: { caminho: string; mtime: number } | null = null
+  for (const nome of nomes) {
+    if (!/\.txt$/i.test(nome) || !/cookie/i.test(nome)) continue
+    const caminho = join(dir, nome)
+    try {
+      const st = statSync(caminho)
+      if (!st.isFile() || st.mtimeMs < limite) continue
+      if (!pareceNetscape(readFileSync(caminho, 'utf8').slice(0, 8192))) continue
+      if (!melhor || st.mtimeMs > melhor.mtime) melhor = { caminho, mtime: st.mtimeMs }
+    } catch {
+      continue
+    }
+  }
+  return melhor?.caminho ?? null
 }
