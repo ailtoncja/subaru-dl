@@ -1,0 +1,71 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/*.html"
+        ],
+        "createdAt": "2026-10-19T05:53:42.132Z",
+        "reason": "Agent: decision-page candidate comps for the closed Pintura de Rali choice (canon.html is the category-default anti-reference); gitignored, never shipped"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/*.html"
+        ],
+        "createdAt": "2026-10-19T05:53:42.274Z",
+        "reason": "Agent: decision-page candidate comps for the closed Pintura de Rali choice (canon.html is the category-default anti-reference); gitignored, never shipped"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/*.html"
+        ],
+        "createdAt": "2026-10-19T05:53:42.420Z",
+        "reason": "Agent: decision-page candidate comps for the closed Pintura de Rali choice (canon.html is the category-default anti-reference); gitignored, never shipped"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/*.html"
+        ],
+        "createdAt": "2026-10-19T05:53:42.563Z",
+        "reason": "Agent: decision-page candidate comps for the closed Pintura de Rali choice (canon.html is the category-default anti-reference); gitignored, never shipped"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/*.html"
+        ],
+        "createdAt": "2026-10-19T05:53:42.706Z",
+        "reason": "Agent: decision-page candidate comps for the closed Pintura de Rali choice (canon.html is the category-default anti-reference); gitignored, never shipped"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/*.html"
+        ],
+        "createdAt": "2026-10-19T05:53:42.864Z",
+        "reason": "Agent: decision-page candidate comps for the closed Pintura de Rali choice (canon.html is the category-default anti-reference); gitignored, never shipped"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/*.html"
+        ],
+        "createdAt": "2026-10-19T05:53:43.012Z",
+        "reason": "Agent: decision-page candidate comps for the closed Pintura de Rali choice (canon.html is the category-default anti-reference); gitignored, never shipped"
+      }
+    ]
+  }
+}
