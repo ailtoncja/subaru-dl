@@ -1,4 +1,4 @@
-import { Cookie, FolderOpen, RefreshCw, RotateCcw, Search, Send, Smartphone, X } from 'lucide-react'
+import { Cookie, Download, FolderOpen, RefreshCw, RotateCcw, Search, Send, Smartphone, X } from 'lucide-react'
 import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import type { CampoNome, CelularEncontrado, Configuracoes as TConfig, Navegador, OpcoesDownload, Segredos } from '@shared/tipos'
 import { SelecaoOrganizar, SelecaoOrganizarGaleria } from '../componentes/Destino'
@@ -140,6 +140,7 @@ export default function Configuracoes() {
   const [gerandoCookies, setGerandoCookies] = useState(false)
   const [soSitesDeVideo, setSoSitesDeVideo] = useState(true)
   const [resultadoCookies, setResultadoCookies] = useState<{ ok: boolean; texto: string } | null>(null)
+  const [importandoCookies, setImportandoCookies] = useState(false)
   const [celulares, setCelulares] = useState<CelularEncontrado[] | null>(null)
   const [procurandoCelular, setProcurandoCelular] = useState(false)
   const [enderecoCelular, setEnderecoCelular] = useState('')
@@ -187,6 +188,34 @@ export default function Configuracoes() {
       setResultadoCookies({ ok: false, texto: r.erro ?? 'Não consegui gerar o cookies.txt.' })
     }
   }
+
+  /** Chrome e Edge: importa o cookies.txt que a extensão exportou (acha sozinho na pasta Downloads, ou pergunta). */
+  const importarCookiesExtensao = async () => {
+    setImportandoCookies(true)
+    setResultadoCookies(null)
+    let caminho = await window.api.acharCookiesBaixado()
+    const achadoSozinho = !!caminho
+    if (!caminho) caminho = await window.api.escolherArquivo([{ name: 'Cookies (cookies.txt)', extensions: ['txt'] }])
+    if (!caminho) {
+      setImportandoCookies(false)
+      return
+    }
+    const r = await window.api.importarCookies(caminho, soSitesDeVideo)
+    setImportandoCookies(false)
+    if (r.ok) {
+      await salvarConfig({ cookies: { ...c.cookies, origem: 'arquivo', arquivo: r.arquivo } })
+      const nome = caminho.split(/[\\/]/).pop()
+      setResultadoCookies({
+        ok: true,
+        texto: `${r.salvos} cookies de ${r.sites} sites importados${achadoSozinho ? ` (achei "${nome}" na pasta Downloads)` : ''}. O programa já está usando esse arquivo.`
+      })
+    } else {
+      setResultadoCookies({ ok: false, texto: r.erro ?? 'Não consegui importar o cookies.txt.' })
+    }
+  }
+
+  /** Chrome, Edge e afins travam a leitura automática dos cookies; só o Firefox funciona por esse caminho. */
+  const ehChromium = c.cookies.navegador !== 'firefox' && c.cookies.navegador !== 'nenhum'
 
   const mudarPadrao = (parcial: Partial<OpcoesDownload>) => salvarConfig({ padrao: { ...c.padrao, ...parcial } })
   const mudarSegredo = async (parcial: Partial<Segredos>) => {
@@ -571,7 +600,7 @@ export default function Configuracoes() {
           el: (
             <Linha
               rotulo="Gerar cookies.txt"
-              dica="Lê os cookies do navegador e salva num cookies.txt pronto para usar (serve também para levar ao celular). O Firefox funciona aberto; no Chrome e no Edge, feche o navegador antes."
+              dica="Lê os cookies do navegador e salva num cookies.txt pronto para usar (serve também para levar ao celular). O Firefox funciona aberto. O Chrome e o Edge novos bloqueiam a leitura automática (proteção do próprio navegador) — use os botões de extensão abaixo."
               coluna
             >
               <div className="flex" style={{ flexWrap: 'wrap', gap: 8 }}>
@@ -597,6 +626,46 @@ export default function Configuracoes() {
                 <input type="checkbox" checked={soSitesDeVideo} onChange={(e) => setSoSitesDeVideo(e.target.checked)} />
                 Só os sites de vídeo e imagem (YouTube, Instagram, X, TikTok, Twitch…) — recomendado
               </label>
+              {ehChromium && (
+                <div
+                  style={{
+                    marginTop: 10,
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    background: 'var(--fundo-2, rgba(255,255,255,0.03))',
+                    border: '1px solid var(--borda, rgba(255,255,255,0.08))'
+                  }}
+                >
+                  <div className="pequeno" style={{ marginBottom: 8 }}>
+                    <strong>{c.cookies.navegador === 'edge' ? 'Edge' : 'Chrome e similares'}</strong> bloqueiam a
+                    leitura automática dos cookies — é uma proteção do próprio navegador, não dá para desligar. O
+                    caminho que funciona: exportar um cookies.txt por uma extensão e importar aqui. Leva 1 minuto e só
+                    precisa ser feito de novo quando o login expirar.
+                  </div>
+                  <div className="flex" style={{ flexWrap: 'wrap', gap: 8 }}>
+                    <button
+                      className="btn pequeno"
+                      onClick={() =>
+                        void window.api.abrirLink(
+                          c.cookies.navegador === 'edge'
+                            ? 'https://microsoftedge.microsoft.com/addons/search/cookies.txt'
+                            : 'https://chromewebstore.google.com/search/get%20cookies.txt'
+                        )
+                      }
+                    >
+                      <Download /> 1. Instalar extensão
+                    </button>
+                    <button className="btn primario pequeno" disabled={importandoCookies} onClick={importarCookiesExtensao}>
+                      {importandoCookies ? <RefreshCw className="girando" /> : <FolderOpen />}{' '}
+                      {importandoCookies ? 'Importando…' : '2. Importar o cookies.txt'}
+                    </button>
+                  </div>
+                  <div className="pequeno" style={{ marginTop: 6, opacity: 0.75 }}>
+                    Depois de instalar: abra o site já logado (ex.: youtube.com), clique na extensão e em “Export”. Volte
+                    aqui e clique em “2. Importar” — o programa acha o arquivo na pasta Downloads sozinho.
+                  </div>
+                </div>
+              )}
               {resultadoCookies && (
                 <div className="pequeno" style={{ marginTop: 8, color: resultadoCookies.ok ? 'var(--verde, #4ade80)' : 'var(--vermelho, #f87171)' }}>
                   {resultadoCookies.texto}

@@ -80,6 +80,10 @@ export interface ApiSubaru {
   perfisNavegador(navegador: string): Promise<string[]>
   /** Lê os cookies do navegador e grava um cookies.txt pronto para o yt-dlp e o gallery-dl */
   exportarCookies(navegador: string, perfil: string, soSites: boolean): Promise<ResultadoCookies>
+  /** Importa um cookies.txt (ex.: exportado por extensão no Chrome/Edge), valida e passa a usá-lo */
+  importarCookies(caminho: string, soSites: boolean): Promise<ResultadoCookies>
+  /** Procura na pasta Downloads o cookies.txt que uma extensão acabou de exportar. Devolve o caminho ou null */
+  acharCookiesBaixado(): Promise<string | null>
   /** Copia o cookies.txt gerado para onde o usuário escolher (ex.: para levar ao celular). Devolve o destino. */
   salvarCookiesComo(): Promise<string | null>
   /** Procura, na rede local, celulares com o Subaru DL esperando cookies */
@@ -159,6 +163,8 @@ export const CANAIS_INVOKE = [
   'salvarSegredos',
   'perfisNavegador',
   'exportarCookies',
+  'importarCookies',
+  'acharCookiesBaixado',
   'salvarCookiesComo',
   'procurarCelulares',
   'enviarCookiesAoCelular',
