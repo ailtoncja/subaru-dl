@@ -15,7 +15,7 @@ export default function Logs() {
   const [filtro, setFiltro] = useState<Filtro>('todos')
   const [busca, setBusca] = useState('')
   const [seguir, setSeguir] = useState(true)
-  const fimRef = useRef<HTMLDivElement>(null)
+  const caixa = useRef<HTMLDivElement>(null)
 
   const titulos = useMemo(() => new Map(fila.map((i) => [i.id, i.info?.titulo ?? i.url])), [fila])
   const visiveis = useMemo(() => {
@@ -38,7 +38,7 @@ export default function Logs() {
   }, [logs])
 
   useEffect(() => {
-    if (seguir) fimRef.current?.scrollIntoView({ block: 'end' })
+    if (seguir && caixa.current) caixa.current.scrollTop = caixa.current.scrollHeight
   }, [visiveis.length, seguir])
 
   const exportar = async () => {
@@ -52,11 +52,11 @@ export default function Logs() {
   }
 
   return (
-    <div className="pagina">
-      <div className="cabecalho">
-        <h1>
-          Logs <span className="sub">{logs.length} entradas</span>
-        </h1>
+    <div className="fluxo">
+      <div className="ferramentas-barra">
+        <span className="muted pequeno flex-1">
+          {logs.length} {logs.length === 1 ? 'entrada' : 'entradas'} · o que o yt-dlp e o gallery-dl responderam, para quando algo der errado
+        </span>
         <label className="flex pequeno muted" style={{ cursor: 'pointer' }}>
           <input type="checkbox" checked={seguir} onChange={(e) => setSeguir(e.target.checked)} /> Acompanhar o fim
         </label>
@@ -81,8 +81,8 @@ export default function Logs() {
             ]}
           />
           <div className="busca">
-            <Search width={16} className="muted" />
-            <input className="flex-1" style={{ border: 0, background: 'transparent', outline: 'none', padding: '7px 0' }} placeholder="Procurar nos logs…" value={busca} onChange={(e) => setBusca(e.target.value)} />
+            <Search />
+            <input placeholder="Procurar no registro" aria-label="Procurar no registro" value={busca} onChange={(e) => setBusca(e.target.value)} />
           </div>
         </div>
 
@@ -94,7 +94,7 @@ export default function Logs() {
         ))}
 
         {visiveis.length ? (
-          <div className="cartao logs">
+          <div className="cartao logs" ref={caixa}>
             {visiveis.map((l) => (
               <div key={l.id} className={`log ${l.nivel}`}>
                 <span className="hora">{new Date(l.hora).toLocaleTimeString('pt-BR')}</span>
@@ -105,12 +105,11 @@ export default function Logs() {
                 </span>
               </div>
             ))}
-            <div ref={fimRef} />
           </div>
         ) : (
           <div className="vazio">
             <ScrollText />
-            <strong>Sem logs ainda</strong>
+            <strong>Registro vazio</strong>
             <span>Os comandos e mensagens do yt-dlp aparecem aqui quando você baixa algo.</span>
           </div>
         )}

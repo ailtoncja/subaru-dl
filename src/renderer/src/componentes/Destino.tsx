@@ -15,7 +15,10 @@ export const OPCOES_ORGANIZAR: Array<{ valor: PresetSubpasta; nome: string; exem
 
 /** "C:\Users\fulano\Videos\Subaru DL" → "Videos\Subaru DL" */
 export function pastaCurta(caminho: string): string {
-  return caminho.split(/[\\/]/).filter(Boolean).slice(-2).join('\\')
+  const partes = caminho.split(/[\\/]/).filter(Boolean)
+  if (partes.length >= 2) return partes.slice(-2).join('\\')
+  const unico = partes[0] ?? caminho
+  return unico.length > 28 ? `…${unico.slice(-26)}` : unico
 }
 
 export function pastaPadrao(modo: Modo): string {
@@ -23,19 +26,17 @@ export function pastaPadrao(modo: Modo): string {
   return modo === 'audio' ? c.pastaAudio : c.pastaVideo
 }
 
-/** "Salvar em: Videos\Subaru DL  Alterar" — cada download pode ir para uma pasta diferente. */
+/** "Salvar em Vídeos\Subaru DL · Alterar" — cada download pode ir para uma pasta diferente. */
 export function CampoPasta({ pasta, modo, aoMudar, semRotulo }: { pasta: string | null; modo: Modo; aoMudar: (pasta: string | null) => void; semRotulo?: boolean }) {
   const config = useEstado((s) => s.config)!
   const atual = pasta ?? (modo === 'audio' ? config.pastaAudio : config.pastaVideo)
   return (
-    <span className="flex mono pequeno" style={{ gap: 8 }} title={atual}>
-      <FolderOpen width={16} className="muted" />
-      {!semRotulo && <span className="muted">Salvar em:</span>}
-      <span className="truncar" style={{ maxWidth: 260 }}>
-        {pastaCurta(atual)}
-      </span>
+    <span className="destino" title={atual}>
+      <FolderOpen />
+      {!semRotulo && <span className="muted">Salvar em</span>}
+      <span className="caminho">{pastaCurta(atual)}</span>
       <button
-        className="link-amarelo mono pequeno"
+        className="link-amarelo"
         onClick={async () => {
           const nova = await window.api.escolherPasta(atual)
           if (nova) aoMudar(nova)
@@ -44,7 +45,7 @@ export function CampoPasta({ pasta, modo, aoMudar, semRotulo }: { pasta: string 
         Alterar
       </button>
       {pasta && (
-        <button className="link-amarelo mono pequeno" style={{ color: 'var(--muted)' }} onClick={() => aoMudar(null)} title="Voltar para a pasta das configurações">
+        <button className="link-amarelo" style={{ color: 'var(--muted)' }} onClick={() => aoMudar(null)} title="Voltar para a pasta das configurações">
           Padrão
         </button>
       )}
@@ -56,7 +57,7 @@ export function CampoPasta({ pasta, modo, aoMudar, semRotulo }: { pasta: string 
 export function SelecaoOrganizar({ o, mudar, compacto }: { o: OpcoesDownload; mudar: (p: Partial<OpcoesDownload>) => void; compacto?: boolean }) {
   return (
     <span className="flex" style={{ gap: 8, flexWrap: 'wrap' }}>
-      <select value={o.subpasta} onChange={(e) => mudar({ subpasta: e.target.value as PresetSubpasta })} className={compacto ? 'mono' : undefined}>
+      <select value={o.subpasta} onChange={(e) => mudar({ subpasta: e.target.value as PresetSubpasta })} aria-label="Organizar em subpastas">
         {OPCOES_ORGANIZAR.map((op) => (
           <option key={op.valor} value={op.valor}>
             {compacto ? `Organizar: ${op.nome}` : op.nome}
@@ -66,7 +67,7 @@ export function SelecaoOrganizar({ o, mudar, compacto }: { o: OpcoesDownload; mu
       {o.subpasta === 'personalizado' && (
         <input
           className="campo mono"
-          style={{ width: 240, fontSize: 12.5 }}
+          style={{ width: 240, height: 32, fontSize: 12.5 }}
           value={o.subpastaPersonalizada}
           onChange={(e) => mudar({ subpastaPersonalizada: e.target.value })}
           title="Modelo de pasta do yt-dlp, ex.: %(uploader)s/%(upload_date>%Y)s"
@@ -99,8 +100,8 @@ export function SelecaoOrganizarGaleria({
   return (
     <span className="flex" style={{ gap: 8, flexWrap: 'wrap' }}>
       <select
-        className={compacto ? 'mono' : undefined}
-        style={compacto ? { padding: '4px 30px 4px 8px', fontSize: 12.5 } : undefined}
+        aria-label="Organizar em subpastas"
+        style={compacto ? { height: 32, padding: '0 30px 0 10px', fontSize: 13 } : undefined}
         value={valor}
         onChange={(e) => aoMudar(e.target.value as OrganizarGaleria, formato)}
       >
@@ -113,7 +114,7 @@ export function SelecaoOrganizarGaleria({
       {valor === 'personalizado' && (
         <input
           className="campo mono"
-          style={{ width: 200, fontSize: 12.5, padding: '4px 8px' }}
+          style={{ width: 200, height: 32, fontSize: 12.5 }}
           value={formato}
           onChange={(e) => aoMudar(valor, e.target.value)}
           title="Pastas separadas por /. Ex.: {category}/{user} (site/perfil) ou {user}"

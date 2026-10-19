@@ -11,9 +11,12 @@ export function SelecaoLegenda({ info, o, mudar }: { info: InfoMidia; o: OpcoesD
   if (info.playlist) {
     const idioma = (l.idiomas[0] ?? 'pt').toUpperCase()
     return (
-      <label className="legenda-simples" title="Usa a legenda do vídeo; se não tiver, a automática">
-        <input type="checkbox" checked={l.ativas} onChange={(e) => alterar({ ativas: e.target.checked, automaticas: e.target.checked ? true : l.automaticas })} />
-        Legendas {idioma} (ou automática)
+      <label className="rotulado largo legenda-simples" title="Usa a legenda do vídeo; se não tiver, a automática">
+        <span>Legenda</span>
+        <span className="flex" style={{ height: 38, color: 'var(--tinta)', fontWeight: 400, fontSize: 14 }}>
+          <input type="checkbox" checked={l.ativas} onChange={(e) => alterar({ ativas: e.target.checked, automaticas: e.target.checked ? true : l.automaticas })} />
+          Legendas {idioma} (ou automática)
+        </span>
       </label>
     )
   }
@@ -21,42 +24,51 @@ export function SelecaoLegenda({ info, o, mudar }: { info: InfoMidia; o: OpcoesD
   const { manuais, automaticas } = opcoesLegenda(info.legendas, info.legendasAuto)
   if (!manuais.length && !automaticas.length) {
     return (
-      <select className="legenda" disabled value="">
-        <option value="">Legenda: este vídeo não tem legendas</option>
-      </select>
+      <label className="rotulado largo">
+        <span>Legenda</span>
+        <select disabled value="">
+          <option value="">Este vídeo não tem legendas</option>
+        </select>
+      </label>
     )
   }
 
   const valor = valorLegenda(l)
   return (
     <>
-      <select className={valor ? 'legenda com-modo' : 'legenda'} value={valor} onChange={(e) => alterar(aplicarLegenda(l, e.target.value))}>
-        <option value="">Legenda: nenhuma</option>
-        {valor === 'padrao' && <option value="padrao">Legenda: {l.todas ? 'todas' : l.idiomas.map((i) => nomeIdioma(i).split(' · ')[0]).join(', ')} (padrão)</option>}
-        {manuais.length > 0 && (
-          <optgroup label="Legendas do vídeo">
-            {manuais.map((x) => (
-              <option key={x.valor} value={x.valor}>
-                Legenda: {x.nome}
-              </option>
-            ))}
-          </optgroup>
-        )}
-        {automaticas.length > 0 && (
-          <optgroup label="Automáticas (geradas pelo site)">
-            {automaticas.map((x) => (
-              <option key={x.valor} value={x.valor}>
-                Legenda: {x.nome} · automática
-              </option>
-            ))}
-          </optgroup>
-        )}
-      </select>
-      {valor && (
-        <select title="Embutida fica dentro do vídeo; separada vira um arquivo .srt ao lado" value={l.embutir ? 'embutir' : 'separado'} onChange={(e) => alterar({ embutir: e.target.value === 'embutir' })}>
-          <option value="embutir">Embutida</option>
-          <option value="separado">Separada</option>
+      <label className="rotulado largo">
+        <span>Legenda</span>
+        <select value={valor} onChange={(e) => alterar(aplicarLegenda(l, e.target.value))}>
+          <option value="">Nenhuma</option>
+          {valor === 'padrao' && <option value="padrao">{l.todas ? 'Todas' : l.idiomas.map((i) => nomeIdioma(i).split(' · ')[0]).join(', ')} (padrão)</option>}
+          {manuais.length > 0 && (
+            <optgroup label="Legendas do vídeo">
+              {manuais.map((x) => (
+                <option key={x.valor} value={x.valor}>
+                  {x.nome}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {automaticas.length > 0 && (
+            <optgroup label="Automáticas (geradas pelo site)">
+              {automaticas.map((x) => (
+                <option key={x.valor} value={x.valor}>
+                  {x.nome} · automática
+                </option>
+              ))}
+            </optgroup>
+          )}
         </select>
+      </label>
+      {valor && (
+        <label className="rotulado estreito" title="Embutida fica dentro do vídeo; separada vira um arquivo .srt ao lado">
+          <span>Como</span>
+          <select value={l.embutir ? 'embutir' : 'separado'} onChange={(e) => alterar({ embutir: e.target.value === 'embutir' })}>
+            <option value="embutir">Embutida</option>
+            <option value="separado">Separada</option>
+          </select>
+        </label>
       )}
     </>
   )

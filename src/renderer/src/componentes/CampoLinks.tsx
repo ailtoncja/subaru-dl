@@ -49,6 +49,7 @@ export function CampoLinks({
     <textarea
       ref={ref}
       rows={1}
+      wrap={valor.includes('\n') ? 'soft' : 'off'}
       value={valor}
       autoFocus={autoFocus}
       spellCheck={false}

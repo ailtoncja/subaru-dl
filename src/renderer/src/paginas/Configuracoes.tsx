@@ -1,5 +1,5 @@
 import { Cookie, Download, FolderOpen, RefreshCw, RotateCcw, Search, Send, Smartphone, X } from 'lucide-react'
-import { Fragment, useEffect, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
 import type { CampoNome, CelularEncontrado, Configuracoes as TConfig, Navegador, OpcoesDownload, Segredos } from '@shared/tipos'
 import { SelecaoOrganizar, SelecaoOrganizarGaleria } from '../componentes/Destino'
 import { EditorLegendas, EditorPosProcesso, EditorQualidade } from '../componentes/EditorOpcoes'
@@ -283,7 +283,7 @@ export default function Configuracoes() {
         {
           texto: 'organizar subpastas playlist canal ano mês artista álbum',
           el: (
-            <Linha rotulo="Organizar em subpastas (padrão)" dica="Dá para mudar em cada download, na tela Início" coluna={c.padrao.subpasta === 'personalizado'}>
+            <Linha rotulo="Organizar em subpastas (padrão)" dica="Dá para mudar em cada download, na tela Baixar" coluna={c.padrao.subpasta === 'personalizado'}>
               <SelecaoOrganizar o={c.padrao} mudar={mudarPadrao} />
             </Linha>
           )
@@ -611,7 +611,7 @@ export default function Configuracoes() {
                   largura={220}
                   opcoes={[{ valor: '', nome: 'Perfil padrão' }, ...perfis.map((p) => ({ valor: p, nome: p }))]}
                 />
-                <button className="btn primario pequeno" disabled={gerandoCookies} onClick={gerarCookies}>
+                <button className="btn pequeno" disabled={gerandoCookies} onClick={gerarCookies}>
                   {gerandoCookies ? <RefreshCw className="girando" /> : <Cookie />} {gerandoCookies ? 'Lendo o navegador…' : 'Gerar cookies.txt'}
                 </button>
                 <button className="btn pequeno" onClick={async () => {
@@ -655,7 +655,7 @@ export default function Configuracoes() {
                     >
                       <Download /> 1. Instalar extensão
                     </button>
-                    <button className="btn primario pequeno" disabled={importandoCookies} onClick={importarCookiesExtensao}>
+                    <button className="btn pequeno" disabled={importandoCookies} onClick={importarCookiesExtensao}>
                       {importandoCookies ? <RefreshCw className="girando" /> : <FolderOpen />}{' '}
                       {importandoCookies ? 'Importando…' : '2. Importar o cookies.txt'}
                     </button>
@@ -702,7 +702,7 @@ export default function Configuracoes() {
                   onChange={(e) => setCodigoCelular(e.target.value)}
                 />
                 <button
-                  className="btn primario pequeno"
+                  className="btn pequeno"
                   disabled={enviandoCelular || !enderecoCelular.trim() || codigoCelular.replace(/[^a-z0-9]/gi, '').length < 8}
                   onClick={enviarAoCelular}
                 >
@@ -897,7 +897,7 @@ export default function Configuracoes() {
     },
     {
       id: 'galeria',
-      titulo: 'Galeria',
+      titulo: 'Imagens',
       itens: [
         {
           texto: 'galeria pasta imagens gallery-dl',
@@ -918,7 +918,7 @@ export default function Configuracoes() {
         {
           texto: 'galeria organizar subpastas site perfil mesma pasta',
           el: (
-            <Linha rotulo="Organizar a galeria (padrão)" dica="Dá para mudar a cada download, na própria Galeria">
+            <Linha rotulo="Organizar a galeria (padrão)" dica="Dá para mudar a cada download, no modo Imagens da tela Baixar">
               <SelecaoOrganizarGaleria
                 valor={c.galeriaOrganizar}
                 formato={c.galeriaFormatoPasta}
@@ -1054,25 +1054,24 @@ export default function Configuracoes() {
     .map((s) => ({ ...s, itens: termo ? s.itens.filter((i) => `${s.titulo} ${i.texto}`.toLowerCase().includes(termo)) : s.itens }))
     .filter((s) => s.itens.length)
 
+  // Quantas opções cada seção tem de verdade (cada item pode ter várias linhas): o índice mostra o tamanho
+  const [contagem, setContagem] = useState<Record<string, number>>({})
+  useLayoutEffect(() => {
+    const nova: Record<string, number> = {}
+    for (const s of secoes) nova[s.id] = document.querySelectorAll(`#cfg-${s.id} .linha`).length
+    if (JSON.stringify(nova) !== JSON.stringify(contagem)) setContagem(nova)
+  })
+
   return (
-    <div className="pagina">
-      <div className="cabecalho">
-        <h1>Configurações</h1>
-        <div className="busca" style={{ maxWidth: 320 }}>
-          <Search width={16} className="muted" />
-          <input
-            className="flex-1"
-            style={{ border: 0, background: 'transparent', outline: 'none', padding: '7px 0' }}
-            placeholder="Procurar configuração…"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-          />
-          {busca && (
-            <button className="icone-btn" style={{ width: 22, height: 22 }} onClick={() => setBusca('')}>
-              <X width={14} />
-            </button>
-          )}
-        </div>
+    <div className="fluxo">
+      <div className="busca" style={{ maxWidth: 420 }}>
+        <Search />
+        <input placeholder="Procurar um ajuste (ex.: pasta, legenda, cookies)" aria-label="Procurar um ajuste" value={busca} onChange={(e) => setBusca(e.target.value)} />
+        {busca && (
+          <button className="icone-btn leve" style={{ width: 26, height: 26 }} title="Limpar a busca" onClick={() => setBusca('')}>
+            <X width={14} />
+          </button>
+        )}
       </div>
       <div>
         <div className="config">
@@ -1081,6 +1080,11 @@ export default function Configuracoes() {
               {secoes.map((s) => (
                 <button key={s.id} onClick={() => document.getElementById(`cfg-${s.id}`)?.scrollIntoView({ behavior: 'smooth' })}>
                   {s.titulo}
+                  {contagem[s.id] ? (
+                    <span className="qtd" title={`${contagem[s.id]} ${contagem[s.id] === 1 ? 'opção' : 'opções'}`}>
+                      {contagem[s.id]}
+                    </span>
+                  ) : null}
                 </button>
               ))}
             </nav>
@@ -1115,7 +1119,7 @@ export default function Configuracoes() {
                 onClick={async () => {
                   useEstado.setState({ config: await window.api.restaurarPadroes() })
                   setConfirmarReset(false)
-                  avisar('Configurações restauradas')
+                  avisar('Ajustes restaurados para o padrão')
                 }}
               >
                 Restaurar

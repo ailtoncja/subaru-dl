@@ -124,6 +124,13 @@ Legenda: `[ ]` a fazer · `[x]` pronto
 Refeita a partir das imagens de referência: barra de título própria, Início com prévia do link,
 Downloads com fila e histórico, Playlists & Lote, Galeria, Logs, Dependências e Configurações.
 
+## Interface (v0.7) — "Pintura de Rali"
+Refeita do zero com o impeccable: o visual dos carros de rali da Subaru (azul-marinho, amarelo e dourado).
+Três telas em vez de seis: **Baixar** (vídeo, áudio e imagens no mesmo campo, com a prévia e os downloads
+andando logo embaixo), **Downloads** (fila, concluídos e falhas, imagens incluídas) e **Ajustes** (preferências,
+ferramentas e registro). Cada download vira uma linha com placa de número e uma faixa amarela que avança e
+fica dourada na chegada. Playlists somam o tempo do que está marcado e riscam o que já foi baixado.
+
 ## Fora do escopo (removidos)
 6 busca no YouTube · 9 guia de dicas · 66–70 biblioteca (tags, coleções, dividir) · 72–73 página Dados ·
 23 limite de velocidade · 24 agendar downloads · 34 seguir canais · 40 pular lives · 41 agendar live ·

@@ -168,7 +168,7 @@ export function adicionar(
   return { adicionados: novos.length, duplicados }
 }
 
-/** Adiciona um link cuja informação já foi lida (prévia da tela Início): não precisa ler de novo. */
+/** Adiciona um link cuja informação já foi lida (prévia da tela Baixar): não precisa ler de novo. */
 export function adicionarComInfo(url: string, info: InfoMidia, opcoes: Partial<OpcoesDownload>, iniciar: boolean): void {
   const novo = { ...novoItem(url, opcoes), info, status: 'pronto' as const }
   itens.push(novo)
@@ -344,7 +344,7 @@ function iniciarDownload(id: string) {
       definir(id, {
         status: 'erro',
         erro: avisos.length ? 'Nada foi baixado. Veja os avisos nos logs.' : 'Nada foi baixado.',
-        dicaErro: 'Confira os filtros de entrada em Configurações.'
+        dicaErro: 'Confira os filtros de entrada em Ajustes.'
       })
     } else if (codigo === 0) {
       // Concluído sai da fila e vai para o histórico (Downloads → Concluídos)

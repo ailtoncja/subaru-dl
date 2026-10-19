@@ -47,7 +47,8 @@ const OPCOES_CODEC_AUDIO = [
   { valor: 'opus' as const, nome: 'Opus' }
 ]
 
-export function EditorQualidade({ o, mudar, info }: { o: OpcoesDownload; mudar: Mudar; info?: InfoMidia | null }) {
+/** semTipo: na tela Baixar o tipo (vídeo ou áudio) já é escolhido no alto, então não repete aqui. */
+export function EditorQualidade({ o, mudar, info, semTipo }: { o: OpcoesDownload; mudar: Mudar; info?: InfoMidia | null; semTipo?: boolean }) {
   // Com a informação do vídeo, mostra só as qualidades que existem de verdade
   const alturas = new Set(info?.formatos.map((f) => f.altura ?? 0))
   const maior = Math.max(0, ...alturas)
@@ -59,9 +60,11 @@ export function EditorQualidade({ o, mudar, info }: { o: OpcoesDownload; mudar: 
 
   return (
     <>
-      <Linha rotulo="Tipo">
-        <Segmentado valor={o.modo} opcoes={OPCOES_MODO} aoMudar={(modo) => mudar({ modo, formatoId: null })} />
-      </Linha>
+      {!semTipo && (
+        <Linha rotulo="Tipo">
+          <Segmentado valor={o.modo} opcoes={OPCOES_MODO} aoMudar={(modo) => mudar({ modo, formatoId: null })} />
+        </Linha>
+      )}
       {o.modo === 'video' ? (
         <>
           <Linha rotulo="Qualidade" dica="Se não existir, usa a mais próxima abaixo">
