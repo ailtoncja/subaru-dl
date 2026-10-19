@@ -128,6 +128,24 @@ export function estimarTamanho(info: InfoMidia | null, o: OpcoesDownload): { byt
   return total ? { bytes: total, aproximado } : null
 }
 
+/** Bitrate médio aproximado (vídeo, em kbps) de cada qualidade, para estimar listas sem os formatos de cada vídeo. */
+const KBPS_QUALIDADE: Record<string, number> = { '4320': 30000, '2160': 12000, '1440': 6000, '1080': 2500, '720': 1300, '480': 700, '360': 400 }
+
+/**
+ * Estimativa grosseira pelo tempo total (playlists e canais: o site não diz o tamanho de cada vídeo antes de baixar).
+ * Em "A melhor", conta como 1080p. null quando não dá para estimar (manter o original, formato escolhido à mão).
+ */
+export function estimarPorDuracao(segundos: number, o: OpcoesDownload): number | null {
+  if (!segundos || o.manterOriginal) return null
+  if (o.modo === 'audio') {
+    const kbps = o.formatoAudio === 'wav' ? 1411 : o.formatoAudio === 'flac' ? 900 : o.bitrateAudio || 160
+    return (kbps * 1000 * segundos) / 8
+  }
+  if (o.formatoId) return null
+  const kbps = KBPS_QUALIDADE[o.qualidade === 'melhor' ? '1080' : o.qualidade] ?? 2500
+  return ((kbps + 128) * 1000 * segundos) / 8
+}
+
 /** Descrição curta de um formato da lista (item 11). */
 export function descreverFormato(f: Formato): string {
   const partes: string[] = []

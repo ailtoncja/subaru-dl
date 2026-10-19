@@ -1,6 +1,6 @@
 ---
 name: Subaru DL
-description: Windows downloader for video, audio, playlists and image galleries, painted in the Subaru rally livery.
+description: Windows downloader for video, audio, playlists and image galleries, run like a live football round in the three Subaru colours.
 colors:
   marinho: "#0c1430"
   amarelo: "#ffd200"
@@ -12,33 +12,60 @@ colors:
   painel-3: "#22336c"
   campo: "#0a1230"
   linha: "#24336f"
+  linha-fina: "#1a2757"
   linha-forte: "#34468c"
-  trilho-faixa: "#1c2a5e"
+  linha-hover: "#4356a0"
+  linha-foco: "#5a6dbb"
+  linha-ativa: "#4a5eae"
   tinta: "#f2f4f8"
   muted: "#a9b3d1"
   dim: "#8b96c2"
   amarelo-hover: "#ffdc3d"
+  vivo-fundo: "rgb(255 210 0 / 0.045)"
   ouro-fundo: "rgb(217 180 74 / 0.1)"
   ouro-borda: "rgb(217 180 74 / 0.42)"
   erro: "#ff7b7b"
   erro-fundo: "rgb(255 123 123 / 0.08)"
   erro-borda: "rgb(255 123 123 / 0.35)"
 typography:
-  headline:
-    fontFamily: "'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif"
-    fontSize: "23px"
-    fontWeight: 650
-    lineHeight: 1.2
-    letterSpacing: "-0.01em"
+  numeral-placar:
+    fontFamily: "'Archivo', 'Segoe UI', sans-serif"
+    fontSize: "44px"
+    fontWeight: 800
+    lineHeight: 1
+    letterSpacing: "0"
+    fontFeature: "tnum"
+    fontVariation: "'wdth' 70"
+  numeral-detalhe:
+    fontFamily: "'Archivo', 'Segoe UI', sans-serif"
+    fontSize: "26px"
+    fontWeight: 800
+    lineHeight: 1
+    letterSpacing: "0"
+    fontFeature: "tnum"
+    fontVariation: "'wdth' 70"
+  numeral-tabela:
+    fontFamily: "'Archivo', 'Segoe UI', sans-serif"
+    fontSize: "17px"
+    fontWeight: 800
+    lineHeight: 1
+    letterSpacing: "0"
+    fontFeature: "tnum"
+    fontVariation: "'wdth' 70"
   title:
     fontFamily: "'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif"
     fontSize: "20px"
     fontWeight: 650
     lineHeight: 1.28
     letterSpacing: "-0.005em"
-  title-section:
+  title-placar:
     fontFamily: "'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif"
     fontSize: "16.5px"
+    fontWeight: 650
+    lineHeight: 1.3
+  title-section:
+    fontFamily: "'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif"
+    fontSize: "16px"
     fontWeight: 650
   body:
     fontFamily: "'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif"
@@ -47,8 +74,13 @@ typography:
     lineHeight: 1.45
   body-strong:
     fontFamily: "'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif"
-    fontSize: "14.5px"
+    fontSize: "14px"
     fontWeight: 600
+  cell:
+    fontFamily: "'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif"
+    fontSize: "13.5px"
+    fontWeight: 400
+    fontFeature: "tnum"
   meta:
     fontFamily: "'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif"
     fontSize: "12.5px"
@@ -58,364 +90,315 @@ typography:
     fontFamily: "'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif"
     fontSize: "12px"
     fontWeight: 600
-  numeral-live:
-    fontFamily: "'Barlow Condensed', 'Segoe UI', sans-serif"
-    fontSize: "30px"
-    fontWeight: 800
-    lineHeight: 1
-    letterSpacing: "0.005em"
-    fontFeature: "tnum"
-  numeral-plate:
-    fontFamily: "'Barlow Condensed', 'Segoe UI', sans-serif"
-    fontSize: "22px"
-    fontWeight: 800
-    lineHeight: 1
-    fontFeature: "tnum"
-  numeral-state:
-    fontFamily: "'Barlow Condensed', 'Segoe UI', sans-serif"
-    fontSize: "20px"
+  column-head:
+    fontFamily: "'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif"
+    fontSize: "11.5px"
     fontWeight: 700
-    lineHeight: 1
-    letterSpacing: "0.01em"
+    letterSpacing: "0.05em"
   mono:
     fontFamily: "'Cascadia Mono', 'Cascadia Code', Consolas, monospace"
     fontSize: "12px"
-    fontWeight: 400
     lineHeight: 1.55
 rounded:
-  tag: "5px"
-  plate: "7px"
-  sm: "8px"
-  md: "9px"
-  lg: "10px"
+  capa: "4px"
+  tile: "6px"
+  pill-inner: "7px"
+  control: "9px"
+  field: "10px"
   card: "12px"
-  link-field: "13px"
   dialog: "14px"
   pill: "999px"
 spacing:
-  list: "8px"
-  control: "10px"
-  row: "14px"
-  card: "16px"
-  page-gap: "18px"
-  preview: "20px"
-  page-x: "32px"
-  page-x-narrow: "24px"
+  margem: "32px"
+  margem-estreita: "24px"
+  gap-mesa: "18px"
+  gap-fluxo: "16px"
+  celula: "10px"
+  col-pos: "54px"
+  col-capa: "86px"
+  col-tipo: "112px"
+  col-situacao: "200px"
+  col-tempo: "150px"
+  col-tamanho: "142px"
+  col-acoes: "180px"
 components:
   button-primary:
     backgroundColor: "{colors.amarelo}"
     textColor: "{colors.marinho}"
-    rounded: "{rounded.md}"
+    rounded: "{rounded.control}"
     padding: "0 15px"
     height: "38px"
   button-primary-hover:
     backgroundColor: "{colors.amarelo-hover}"
-    textColor: "{colors.marinho}"
-  button-primary-disabled:
-    backgroundColor: "{colors.painel-3}"
-    textColor: "{colors.dim}"
-  button-primary-large:
+  button-primary-link:
     backgroundColor: "{colors.amarelo}"
     textColor: "{colors.marinho}"
-    rounded: "{rounded.lg}"
-    padding: "0 24px"
-    height: "46px"
-  button-secondary:
+    rounded: "{rounded.field}"
+    padding: "0 22px"
+    height: "52px"
+  button:
     backgroundColor: "{colors.painel-2}"
     textColor: "{colors.tinta}"
-    rounded: "{rounded.md}"
+    rounded: "{rounded.control}"
     padding: "0 15px"
     height: "38px"
-  button-secondary-hover:
+  button-hover:
     backgroundColor: "{colors.painel-3}"
+  button-small:
+    backgroundColor: "{colors.painel-2}"
+    textColor: "{colors.tinta}"
+    rounded: "8px"
+    padding: "0 11px"
+    height: "30px"
   button-ghost:
+    backgroundColor: "transparent"
     textColor: "{colors.muted}"
-    rounded: "{rounded.md}"
+    rounded: "{rounded.control}"
     padding: "0 15px"
     height: "38px"
-  field:
+  input:
     backgroundColor: "{colors.campo}"
     textColor: "{colors.tinta}"
-    rounded: "{rounded.md}"
+    rounded: "{rounded.control}"
     padding: "0 12px"
     height: "38px"
   link-field:
     backgroundColor: "{colors.campo}"
     textColor: "{colors.tinta}"
-    rounded: "{rounded.link-field}"
-    padding: "9px 9px 9px 18px"
-    height: "66px"
+    rounded: "{rounded.field}"
+    padding: "5px 6px 5px 16px"
+    height: "52px"
+  segmented-mode:
+    backgroundColor: "{colors.campo}"
+    textColor: "{colors.muted}"
+    rounded: "{rounded.field}"
+    padding: "4px"
+    height: "52px"
+  segmented-mode-active:
+    backgroundColor: "{colors.painel-3}"
+    textColor: "{colors.tinta}"
+  scoreboard:
+    backgroundColor: "{colors.barra}"
+    textColor: "{colors.tinta}"
+    rounded: "{rounded.card}"
+    height: "108px"
+  scoreboard-live-block:
+    backgroundColor: "{colors.amarelo}"
+    textColor: "{colors.marinho}"
+    typography: "{typography.numeral-detalhe}"
+  scoreboard-final-block:
+    backgroundColor: "{colors.ouro}"
+    textColor: "{colors.marinho}"
+    typography: "{typography.numeral-detalhe}"
+  zone-tile-live:
+    backgroundColor: "{colors.amarelo}"
+    textColor: "{colors.marinho}"
+    typography: "{typography.numeral-tabela}"
+    rounded: "{rounded.tile}"
+    size: "28px"
+  zone-tile-delivered:
+    backgroundColor: "{colors.ouro}"
+    textColor: "{colors.marinho}"
+    typography: "{typography.numeral-tabela}"
+    rounded: "{rounded.tile}"
+    size: "28px"
+  zone-tile-queued:
+    backgroundColor: "{colors.painel-3}"
+    textColor: "{colors.muted}"
+    typography: "{typography.numeral-tabela}"
+    rounded: "{rounded.tile}"
+    size: "28px"
+  zone-tile-failed:
+    backgroundColor: "{colors.erro}"
+    textColor: "{colors.marinho}"
+    typography: "{typography.numeral-tabela}"
+    rounded: "{rounded.tile}"
+    size: "28px"
+  table-tab:
+    backgroundColor: "transparent"
+    textColor: "{colors.muted}"
+    typography: "{typography.body-strong}"
+    height: "44px"
+  table-tab-active:
+    textColor: "{colors.tinta}"
   card:
     backgroundColor: "{colors.painel}"
     rounded: "{rounded.card}"
-    padding: "{spacing.card}"
-  plate:
-    backgroundColor: "{colors.tinta}"
-    textColor: "{colors.marinho}"
-    typography: "{typography.numeral-plate}"
-    rounded: "{rounded.plate}"
-    width: "50px"
-    height: "38px"
-  plate-delivered:
-    backgroundColor: "{colors.ouro}"
-    textColor: "{colors.marinho}"
-    rounded: "{rounded.plate}"
-    width: "50px"
-    height: "38px"
-  plate-stopped:
-    backgroundColor: "{colors.painel-3}"
-    textColor: "{colors.muted}"
-  plate-error:
-    backgroundColor: "{colors.erro}"
-    textColor: "{colors.marinho}"
-  livery-stripe:
-    backgroundColor: "{colors.amarelo}"
-    height: "7px"
-  livery-stripe-delivered:
-    backgroundColor: "{colors.ouro}"
-    height: "7px"
-  livery-stripe-track:
-    backgroundColor: "{colors.trilho-faixa}"
-    height: "7px"
-  row:
-    backgroundColor: "{colors.painel}"
+    padding: "16px"
+  notice:
+    backgroundColor: "{colors.painel-2}"
     textColor: "{colors.tinta}"
-    rounded: "{rounded.card}"
-    padding: "11px 14px 15px 12px"
-    height: "76px"
-  action-bar:
-    backgroundColor: "{colors.painel}"
-    padding: "14px 20px"
-  segmented:
-    backgroundColor: "{colors.campo}"
-    rounded: "{rounded.lg}"
-    padding: "3px"
-  segmented-active:
-    backgroundColor: "{colors.painel-3}"
+    rounded: "{rounded.field}"
+    padding: "10px 13px"
+  notice-error:
+    backgroundColor: "{colors.erro-fundo}"
     textColor: "{colors.tinta}"
-    rounded: "{rounded.plate}"
-    height: "40px"
-  chip:
-    backgroundColor: "{colors.campo}"
-    textColor: "{colors.muted}"
-    rounded: "{rounded.sm}"
-    padding: "0 12px"
-    height: "30px"
-  chip-active:
-    backgroundColor: "{colors.painel-3}"
-    textColor: "{colors.tinta}"
-  nav-item:
-    textColor: "{colors.muted}"
-    rounded: "{rounded.md}"
-    padding: "0 12px"
-    height: "42px"
-    width: "100%"
-  switch-on:
-    backgroundColor: "{colors.amarelo}"
-    rounded: "{rounded.pill}"
-    width: "38px"
-    height: "22px"
+    rounded: "{rounded.field}"
+    padding: "10px 13px"
 ---
 
 # Design System: Subaru DL
 
 ## Overview
 
-**Creative North Star: "Pintura de Rali"**
+**Creative North Star: "Placar Ao Vivo"**
 
-The Subaru WRC livery painted onto a Windows app. A navy chassis (title bar and rail), deeper navy panels for the work, one yellow that means "live" or "act now", and a gold that means "it arrived". Every download is a rally car on a stage: it carries a number plate, advances as a raked yellow stripe along the bottom edge of its row, and turns gold on delivery. The rally lives in the plates, the numerals and the stripe; the copy stays in plain Brazilian Portuguese for a layperson.
+Downloads run like a live round of Brazilian football on television. Whatever is downloading now sits on a broadcast scoreboard pinned under the link field, its percent, time left and speed counting like a match clock. Everything else (live, queued, failed, delivered) sits underneath in one league table on the same screen. The whole app is that one screen. Ajustes slides over the table from the right, and the field and scoreboard stay in view.
 
-The density is that of a working tool, not a landing page. The first screen is the job itself: a heading with the Vídeo / Áudio / Imagens choice, a wide link field with the yellow plate, and the rows of downloads beneath, all on one screen. Paint is flat: navy panels separated by 1px navy rules, with depth reserved for things that actually float. Dark only, by the author's decision.
+The world is painted only in the three Subaru colours on a navy chassis. Navy carries the shell, the board and every rule. Yellow means live or act. Gold means delivered. Red means failed. Numbers have their own face, a condensed upright Archivo at three fixed sizes, the way broadcast graphics set the score apart from the commentary. Every word is Segoe UI Variable, so the app still reads as a native Windows tool. The paint is flat. Shadows appear only on layers that float.
 
-Two typefaces split the work cleanly. Segoe UI Variable carries every word; Barlow Condensed ExtraBold Italic appears only where a number or a plate needs the door-number voice, which is how live percentages read at a glance from across the window.
+Density is that of an operating table: 54px rows, a 108px scoreboard, a 40px title bar of its own, and nothing decorative between them. The app is dark only and Brazilian Portuguese only.
 
 **Key Characteristics:**
-- Navy chassis, navy panels, navy-tinted text; no neutral greys anywhere.
-- Yellow is the one live and action colour; gold is delivered; red is failure.
-- Progress is a raked yellow livery stripe that turns gold on arrival.
-- Number plates mark queue position, and delivered rows carry their format (MP4, MP3, IMG) on a gold plate.
-- One solid yellow plate per screen, kept on screen by a sticky action bar.
-- Every selection shows its running total.
+- One screen: a top row (mode switch, link field, yellow button), the scoreboard while something is live, then the scrolling table.
+- One shared column grid drives the scoreboard, the table header and every row.
+- State is carried by colour (yellow / gold / red / navy) and by five progress marks in one fixed column.
+- One numeral face, Archivo ExtraBold at 70% width, tabular, at 44 / 26 / 17px and nothing in between.
+- Flat navy tonal layers, 1px navy rules, and shadow only on floating layers.
 
 ## Colors
 
-A three-colour Subaru livery (navy, yellow, gold) over a family of navy-derived surfaces, with red reserved for failure.
+Three brand colours on a family of navies. Text is always tinted blue and never pure grey.
 
 ### Primary
-- **Rally Yellow** (amarelo): the single action and live colour. The primary plate button, the advancing progress stripe, the live percentage numeral, the active icon in the rail and in the segmented switch, the active tab underline, focus rings, the text caret, text selection, checkbox and switch fills, and yellow text links ("Ver todos", "Alterar", "Mais opções"). Its hover is **Lit Yellow** (amarelo-hover).
+- **Live Yellow** (amarelo): live or act, and nothing else. It paints the AO VIVO block, live numerals (scoreboard percent, the table's live percent), the live zone tile, filled progress marks, the progress bar, the primary button, active tab underlines, active-icon tints, the focus ring, the caret and text selection. Its hover is **Lit Yellow** (amarelo-hover). Live table rows carry a 4.5% yellow wash (vivo-fundo).
 
 ### Secondary
-- **Delivery Gold** (ouro): the colour of arrival. The delivered stripe, the delivered format plate, the italic "Entregue" state, the "already downloaded" strike-through and its marker, the healthy-tools dot in the rail foot, the icon in toasts and tool cards, and the gold-tinted notice (ouro-fundo fill, ouro-borda stroke) used for "you already downloaded this".
+- **Delivered Gold** (ouro): a download that arrived. It paints the delivered zone tile, five gold marks, the "Entregue" state text, the 100% numeral and block of the final-whistle scoreboard, the arrival glow on a newly landed row (16% gold fading out), the "already downloaded" notice icon, and the line-through on items already downloaded. Ouro-fundo and ouro-borda are its tinted fill and stroke.
 
 ### Tertiary
-- **Failure Red** (erro): failed rows' plate and full-width stripe, error text, the error notice (erro-fundo fill, erro-borda stroke), destructive hover on danger buttons and menu items.
+- **Failure Red** (erro): failed. It paints the failed zone tile, the failing mark, "Falhou", error notices (erro-fundo fill with erro-borda stroke), the failures tab count and danger hovers.
 
 ### Neutral
-- **Chassis Navy** (marinho): the navigation rail and the text colour on every yellow or gold surface.
-- **Title Bar Navy** (barra): the custom frameless title bar, darkest band of the shell.
-- **Floor Navy** (chao): the page background behind content and the dialog body.
-- **Panel Navy** (painel), **Raised Panel** (painel-2), **Top Panel** (painel-3): cards and rows; secondary buttons, menus and toasts; active segment, active chip, hover state of secondary buttons and the stopped plate.
-- **Well Navy** (campo): inputs, the link field, the segmented track, chips, thumbnails' empty background. Wells are darker than the panel they sit on.
-- **Rule Navy** (linha) and **Strong Rule** (linha-forte): 1px dividers and card borders; control borders and the scrollbar thumb.
-- **Stripe Track** (trilho-faixa): the unfilled groove under every livery stripe.
-- **Ink** (tinta): primary text, and the white face of the running number plate.
-- **Muted Ink** (muted) and **Dim Ink** (dim): secondary text and meta; placeholders, separators, hints, empty icons, the stopped stripe.
+- **Chassis Navy** (marinho): the brand navy. It is the ink on every yellow and gold surface (button text, AO VIVO text, zone tile numerals, the switch thumb, selection text).
+- **Board Navy** (barra): the title bar and the scoreboard board, the darkest surface on screen.
+- **Ground Navy** (chao): the page ground, also used behind the Ajustes panel, dialogs and multi-link rows.
+- **Panel Navy** (painel), **Raised Panel** (painel-2), **Top Panel** (painel-3): cards, then buttons and menus, then active and pressed states, each one step lighter.
+- **Well Navy** (campo): recessed inputs, the link field, the segmented track, empty thumbnails.
+- **Rule Navy** (linha), **Fine Rule** (linha-fina), **Strong Rule** (linha-forte): 1px dividers. Fine rules sit between table rows, normal rules sit under headers and panels, and strong rules outline controls and the scoreboard.
+- **Hover Rule** (linha-hover), **Focus Rule** (linha-foco), **Active Rule** (linha-ativa): the navy border states of controls. Hover Rule brightens the border of fields, selects, the link field and buttons on hover. Focus Rule marks the focused link field. Active Rule outlines a selected chip. Each is a step brighter than Strong Rule and stays navy.
+- **Ink** (tinta), **Muted Ink** (muted), **Dim Ink** (dim): primary text, secondary text, then meta, column heads and placeholders.
 
 ### Named Rules
-**The One Live Colour Rule.** Yellow means "act" or "running now" and nothing else. Done is never yellow; it is gold. Waiting is never yellow; it is dim navy.
+**The Three Meanings Rule.** Yellow is live or act, gold is delivered, and red is failed, with no exceptions. No colour borrows another's meaning. Warnings, hints, neutral notices and the log's AVISO level are navy or Ink (painel-2 fill, linha-forte stroke, muted icon, tinta text), never gold, and nothing that has not failed is red.
 
-**The Navy Ink Rule.** Text is always navy-tinted (tinta, muted, dim). No neutral grey text or surface exists in the system; every derived tone sits on the navy hue.
-
-**The Gold Means Arrived Rule.** Gold is spent only on things that have reached the user: delivered rows, already-downloaded entries, the healthy-tools dot, and the "you already have this" notice.
+**The Navy Ink Rule.** Anything set on yellow, gold or red is written in Chassis Navy, never white.
 
 ## Typography
 
+**Numeral Font:** Archivo variable, self-hosted (`fontes/archivo-variavel.woff2`, OFL), upright, weight 800, `font-stretch: 70%`, tabular figures, line-height 1
+**Display / Title Font:** Segoe UI Variable Display (with Segoe UI, system-ui)
 **Body Font:** Segoe UI Variable Text (with Segoe UI, system-ui)
-**Heading Font:** Segoe UI Variable Display (with Segoe UI, system-ui)
-**Numeral Font:** Barlow Condensed Italic, weights 700 and 800, self-hosted woff2 under the OFL
-**Mono Font:** Cascadia Mono (with Cascadia Code, Consolas), for logs and raw arguments
+**Mono:** Cascadia Mono (with Cascadia Code, Consolas). Used only for logs, tool versions and raw command text.
 
-**Character:** The native Windows face does all the reading work; the condensed italic is the rally door number, loud and slanted, used only where a figure should be read from a distance.
+**Character:** Broadcast numerals against native Windows words. The condensed ExtraBold figures read like a match clock. Segoe keeps every sentence quiet and at home on the desktop.
 
 ### Hierarchy
-- **Headline** (650, 23px, 1.2): the page heading ("O que você quer baixar?", "Downloads", "Ajustes").
-- **Title** (650, 20px, 1.28; 18px in a narrow window): the preview card's video title.
-- **Section title** (650, 16.5px): "Seus downloads", dialog titles; settings group labels at 16px.
-- **Body** (400, 14px, 1.45): default text. Row titles step up to 14.5px / 600; the link field's text is 15.5px.
-- **Meta** (400, 12.5px, tabular figures): row meta lines with middle-dot separators, hints under the field.
-- **Label** (600, 12px, dim): field labels above selects ("Qualidade", "Formato", "Legenda").
-- **Live numeral** (Barlow 800 italic, 30px; 26px narrow, yellow): the running percentage or file count on a row.
-- **Plate numeral** (Barlow 800 italic, 22px; 17px with 0.02em tracking for format codes): queue numbers 01, 02 and format codes MP4, MP3, IMG.
-- **State word** (Barlow 700 italic, 20px): "Entregue", "Na fila", "Pausado", "Falhou", coloured by state.
-- **Index numeral** (Barlow 700 italic, 13 to 16px, dim): item numbers in pickers and the multi-link list.
+- **Numeral Placar** (800, 44px, 70% width): the scoreboard's percent, time left, speed and final size.
+- **Numeral Detalhe** (800, 26px, 70% width): the AO VIVO and ENTREGUE tags and the second live game's percent.
+- **Numeral Tabela** (800, 17px, 70% width): zone tile positions, the table's live percent and image count, and the index numbers in playlist and multi-link lists.
+- **Title** (650, 20px / 1.28, Display): the preview title and the Ajustes panel heading. It drops to 18px below 1060px.
+- **Title Placar** (650, 16.5px / 1.3, Display): the live download's title, clamped to two lines. The same size is used for dialog headings.
+- **Title Section** (650, 16px, Display): settings section labels.
+- **Body** (400, 14px / 1.45): base text. Row titles are 14px at 600.
+- **Cell** (13.5px, tabular): table cells, buttons, notices and menus.
+- **Meta** (12.5px, tabular): sublines under titles, in Dim Ink.
+- **Label** (600, 12px): scoreboard cell labels ("baixado", "faltam", "MB por segundo") and field labels.
+- **Column Head** (700, 11.5px, 0.05em, uppercase): table column headers only.
 
 ### Named Rules
-**The Door Number Rule.** Barlow Condensed Italic is for numerals, plates and the one-word row state only. Never for headings, buttons or sentences.
+**The Three Sizes Rule.** Numerals and the AO VIVO / ENTREGUE tags use Archivo at exactly 44, 26 or 17px. There is no fourth size and no Archivo for words. Small badge numbers on thumbnails (photo index, duration) stay in Segoe at 600.
 
-**The Tabular Rule.** Every changing number (percent, speed, sizes, counts, times) uses tabular figures so rows do not jitter while they run.
+**The Unit In Words Rule.** On the scoreboard the number is set large and its unit is written out underneath in Label ("MB por segundo", "MB no arquivo"). The unit is never squeezed in beside the figure.
+
+**The Whole Parts Rule.** Sublines and scoreboard meta lines are lists of whole parts separated by a Dim Ink middle dot. A part that does not fit wraps to a hidden second line and disappears whole. A number is never cut in half or ellipsised. Only the first part (site or folder) may shrink with an ellipsis.
 
 ## Layout
 
-A frameless window: a 40px custom title bar, a 220px navy rail on the left (Baixar, Downloads, Ajustes, with tool status and version at its foot), and a scrolling floor-navy content column capped at 1120px and centred, padded 26px top, 32px sides, 44px bottom, with an 18px vertical rhythm between blocks.
+One screen under a 40px custom title bar. The top row sits at a 20px top inset and holds the 52px Vídeo / Áudio / Imagens segmented control, the full-width link field (52px, growing to 168px for several links) and the 52px yellow button. The 108px scoreboard sits under it only while something is live or for 4.5s after the last arrival. Below that, the table area ("mesa") scrolls on its own. Page side margins are 32px (margem), dropping to 24px below 1060px. The scrollbar gutter (11px) is always reserved inside the right margin, so the scoreboard and the table end on the same line. Vertical gaps on the mesa are 18px, and 16px inside a flow.
 
-The Baixar screen stacks: the heading with the mode switch on its right; the 66px link field holding the yellow plate; a hint line; then either the preview card or nothing; then "Seus downloads". The mode switch sits above the field, beside the heading, not inside it, because the first choice must be legible to someone who has never used a downloader. The field's plate label follows state ("Colar link" when empty, "Baixar" once a link is typed); when a preview opens, the yellow plate moves into the preview's sticky action bar and the field's button becomes a secondary "Colar outro".
+**The One Grid Rule.** The column variables col-pos (54), col-capa (86), col-tipo (112), col-situacao (200), col-tempo (150), col-tamanho (142) and col-acoes (180) set both the table header widths and the scoreboard's grid. The AO VIVO block spans # and capa, the live title sits over Título, the percent over Situação, time left over Tempo, speed over Tamanho, and the second live game over Ações. A new column added to one is added to the other.
 
-The preview card is a two-column grid (thumbnail 220 to 300px, then info), with options, lists and the action bar spanning both columns. Rows are a single horizontal line: plate, thumbnail (96 by 54), title and meta, the right-aligned reading (at least 112px), then actions; 8px between rows. Settings use a sticky 210px section index beside the groups, each index entry showing its count so the extent of settings is visible.
+**The Whole Column Rule.** Narrow windows drop whole columns and never squeeze them. Tipo leaves below 1400px, then Tamanho (with the scoreboard's speed) below 1180px, then Tempo below 1060px. The breakpoints live in both `colunas.ts` and the stylesheet's media queries. A dropped value moves to the line underneath: into the row's subline in the table, and into the neighbouring scoreboard cell's label on the board.
 
-Responsive behaviour is for window width only, down to the 900px minimum. Below 1060px the row tightens (gap 11px, thumbnail 72 by 41, reading 84px, numeral 26px), page side padding drops to 24px, the preview's thumbnail column becomes 176px, and secondary action-bar items marked wide-only are hidden.
-
-**The Same Screen Rule.** Paste, choose, start and watch happen on one screen; the running and delivered rows sit directly under the field.
+Table rows are 54px (60px for the first-run steps), with 10px cell padding. Totals (count, running time, size) sit right-aligned at the table's foot. Ajustes is a right-hand panel up to 1040px wide over a 55% veil. It never replaces the screen.
 
 ## Elevation & Depth
 
-Surfaces are flat paint. Depth comes from tone (well darker than panel, panel lighter than floor) and from 1px navy rules, not from shadows. Shadows exist only on things that genuinely float over the page, and one structural edge.
+The paint is flat. Depth comes from navy tonal steps (barra < campo < chao < painel < painel-2 < painel-3) and 1px rules. The scoreboard outlines itself with an inset 1px strong-rule ring, not a shadow. Real shadows appear only on layers that float above the screen: menus, toasts, dialogs, the Ajustes panel and the sticky action bar.
 
 ### Shadow Vocabulary
-- **Action bar edge** (`box-shadow: 0 -10px 24px -14px rgb(2 5 16 / 0.6)`): the upward edge of the sticky action bar, so content visibly scrolls beneath it.
 - **Menu** (`box-shadow: 0 18px 44px rgb(2 5 16 / 0.55)`): dropdown action menus.
-- **Toast** (`box-shadow: 0 12px 30px rgb(2 5 16 / 0.5)`): bottom-right notices.
-- **Dialog** (`box-shadow: 0 26px 70px rgb(2 5 16 / 0.6)`): modal dialogs over a navy scrim (`rgb(4 8 20 / 0.74)`).
+- **Toast** (`box-shadow: 0 12px 30px rgb(2 5 16 / 0.5)`): bottom-right toasts.
+- **Dialog** (`box-shadow: 0 26px 70px rgb(2 5 16 / 0.6)`): modal dialogs over a 74% veil.
+- **Side panel** (`box-shadow: -28px 0 56px -28px rgb(2 5 16 / 0.75)`): the Ajustes panel's left edge.
+- **Sticky bar** (`box-shadow: 0 -10px 24px -14px rgb(2 5 16 / 0.6)`): the preview action bar pinned at the foot of the mesa.
 
 ### Named Rules
-**The Flat Paint Rule.** Resting surfaces carry no shadow, no gradient and no glow. A shadow is allowed only on a layer that floats (menu, toast, dialog) or on the sticky bar's scroll edge.
+**The Flat Paint Rule.** Surfaces that stay in the page are flat, and a shadow means the layer floats.
 
 ## Shapes
 
-Softly rounded rectangles throughout, scaled by size: 5px for tags and overlay badges, 7px for plates and active segments, 8px for chips and small buttons, 9px for buttons and fields, 10px for large buttons and the segmented track, 12px for cards and rows, 13px for the link field, 14px for dialogs; full pills only for counters, tags and the switch. Borders are 1px; the link field turns dashed yellow while a link is dragged over it.
-
-The one sharp, slanted form is the livery stripe: its yellow fill ends in a 16px rake (`clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 100%, 0 100%)`), and the rake disappears when the stripe is full, failed or delivered. Rows clip their contents so the stripe sits flush on the rounded bottom edge.
+The corners are soft and the edges straight. Thumbnails ("capas", the row's crest) are 64x36 at 4px in rows and 128x72 at 6px on the scoreboard (96x54 below 1400px). Zone tiles are 28px at 6px. Controls are 9px, the link field, segmented track and notices 10px, cards and the scoreboard 12px, and dialogs 14px. Counts and tags are full pills. Progress marks are 9px circles with a 1.5px strong-rule ring, and the live dot is a 9px navy circle. Every divider is 1px. Tab underlines are 3px of yellow.
 
 ## Components
 
 ### Buttons
-Painted plates: solid, flat, confident.
-- **Shape:** gently rounded (9px; 10px large, 8px small). Heights 38px default, 46px large, 30px small; weight 600.
-- **Primary (the yellow plate):** rally yellow fill and border, chassis-navy text, weight 700. Large size is the screen's main action ("Baixar vídeo", "Baixar 246 áudios", "Colar link").
-- **Hover / Focus:** primary lightens to lit yellow; secondary steps from raised to top panel with a brighter border. Focus is a 2px yellow outline offset 2px. No transitions on buttons.
-- **Disabled primary:** stays opaque but repaints as a top-panel plate with dim text, so a disabled main action never looks yellow.
-- **Secondary:** raised-panel fill, strong-rule border, ink text ("Pôr na fila", "Abrir").
-- **Ghost:** transparent with muted text, raised panel on hover. Icon buttons come in 36px bordered and 32px borderless forms; an icon button that resumes or retries tints its icon yellow.
-- **Text link:** yellow 600 text with an arrow or icon, underline on hover.
-
-### Chips
-- **Style:** 30px, well-navy fill, strong-rule border, muted 600 12.5px text, 8px corners.
-- **State:** active chips move to top panel with ink text and a brighter border. Yellow is not used for chip selection.
-
-### Segmented Switch
-The Vídeo / Áudio / Imagens choice, and smaller tab groups. A well-navy track with 3px inset; the active segment is a top-panel tile with ink text and a yellow icon, inactive segments are muted. Large size is 40px tall. Optional counters sit in small pills inside each segment.
-
-### Cards / Containers
-- **Corner Style:** 12px.
-- **Background:** panel navy on the floor.
-- **Shadow Strategy:** none (see Elevation & Depth).
-- **Border:** 1px rule navy.
-- **Internal Padding:** 16px; the preview card uses 20px. Advanced options open inline inside the preview as a plain list under tabs, never as a card inside a card.
+Solid, compact and native-feeling. Only one yellow button sits on a surface.
+- **Shape:** gently rounded (9px). Large buttons and the link-row button use 10px, small ones 8px.
+- **Primary:** Live Yellow fill with Chassis Navy text at 700. In the top row it is 52px tall with 22px sides. Disabled, it turns into a Top Panel fill with Dim Ink text rather than faded yellow.
+- **Default:** Raised Panel fill with a strong-rule border and Ink text at 600, 38px tall. On hover it moves to Top Panel with a Hover Rule border.
+- **Ghost / Small / Icon:** the ghost is transparent with Muted Ink and fills on hover. Small is 30px tall. Icon buttons are 36px square, or 32px and borderless as the light variant in rows. Play and resume icons in rows are tinted yellow.
+- **Focus:** a 2px Live Yellow outline at 2px offset.
 
 ### Inputs / Fields
-- **Style:** well-navy fill, 1px strong-rule border, 9px corners, 38px tall; selects carry a muted chevron.
-- **Focus:** border turns yellow (the link field uses a brighter navy border on focus and yellow only while dragging).
-- **Placeholder:** dim ink. **Disabled:** half opacity.
-- **Link field:** 66px tall, 13px corners, a dim link icon, 15.5px text, and the yellow plate at its right end.
-- **Switch:** 38 by 22 pill; rule-navy track with a muted knob when off, yellow track with a navy knob when on.
+- **Style:** Well Navy fill, a strong-rule 1px border and 9px radius at 38px. The link field is 52px at 10px.
+- **Hover / Focus:** fields and selects take a Hover Rule border on hover. On focus the border turns Live Yellow for fields and search. The link field instead moves from Hover Rule to Focus Rule, staying navy. Dragging a link over it gives a dashed yellow border.
+- **Chips:** Well Navy with a strong-rule border and Muted Ink text. A selected chip moves to Top Panel with an Active Rule border.
+- **Switch:** a 38x22 navy track that fills with yellow when on, with a navy thumb.
+
+### Segmented control and tabs
+- **Segmented (Vídeo / Áudio / Imagens):** a Well Navy track. The active segment is Top Panel with Ink text and a yellow icon.
+- **Table tabs (Todos, Ao vivo, Na fila, Concluídos, Falhas):** text tabs 44px tall with a 3px yellow inset underline when active. Count pills sit on Raised Panel, and the Falhas count turns red when non-zero.
+
+### Live Scoreboard (signature)
+The board is a 108px Board Navy strip on the shared grid, with an inset strong-rule ring. Its left block is solid yellow and holds a pulsing navy dot, "AO VIVO" in Numeral Detalhe, the live count as a link that filters the table, and a navy-outlined "Pausar tudo". Then come the 128x72 crest with the title (two lines max) and the whole-parts meta, then three cells separated by 1px rules: percent in yellow, then time left and speed in Ink, all in Numeral Placar with a Label underneath. The last cell is the second live game in compact form (26px yellow percent, state and title). A 4px progress bar runs along the foot under the title-to-tamanho span only. While the link is read or the file converted, an indeterminate segment runs along it instead. When the last download lands, the block turns gold with "ENTREGUE", the percent reads a gold 100%, an Abrir button appears, and after 4.5s the board leaves. It enters with a 10px drop and fade (0.35s, cubic-bezier(0.16, 1, 0.3, 1)).
+
+### League Table (signature)
+- **Zone tile:** the row's position, zero-padded, in Numeral Tabela on a 28px tile coloured by state. Live is yellow, delivered gold, queued Top Panel, failed red, missing file Raised Panel.
+- **Five marks:** progress in fifths in the Situação column, before the state word. Live marks fill yellow, delivered are all gold, failed are dim up to the failure point and then one red, and queued and paused are dim. While the link is read or the file converted, the marks ripple yellow.
+- **Arrival:** a newly delivered row glows gold for 1.8s, its tile turns from yellow to gold, and the marks fill one by one.
+- **Error detail:** an extra line of text under the row (reason in red, hint in Muted Ink), with no box.
+- **First run:** the table appears with its header and three step rows (zone tiles 01 to 03) instead of an empty state.
+
+### Thumbnail Badges
+Small labels laid over a thumbnail (duration, photo index, VÍDEO, and "Transmissão ao vivo" for a livestream source) share one form. They use a translucent navy plate (rgb(4 8 20 / 0.82)) with 5px corners (4px on grid tiles) and Ink text in Segoe 600 to 700 at 10 to 12px. They carry no state colour, so the scoreboard stays the only place that says AO VIVO.
+
+### Cards / Notices
+- **Cards:** Panel Navy, a 1px rule and 12px corners, padded 16px. There are no cards inside cards. Advanced options inside a preview flatten into a plain list.
+- **Notice:** Raised Panel fill, strong-rule stroke, Muted Ink icon. The "already downloaded" variant tints only the icon gold.
+- **Error notice:** erro-fundo fill, erro-borda stroke, red icon.
 
 ### Navigation
-- **Rail:** chassis navy, 220px, 42px items with 19px icons and 14.5px muted labels. Hover lifts to a slightly lighter navy with ink text; the active item gets a lighter navy tile, ink 600 text and a yellow icon. Counters are small pills; a failure counter is red-tinted.
-- **Rail foot:** a gold dot and "Ferramentas em dia" (red dot when something is wrong), then the version in dim tabular figures.
-- **Title bar:** title-bar navy, 40px, mark and name at left, a muted live status ("Baixando 1 · 4,5 MB/s") with a yellow dot, Windows controls at right (close turns Windows red on hover). The aggregate progress of all running downloads runs as a 3px livery stripe along its bottom edge.
-- **Tabs:** muted 600 labels with a 2px yellow underline and a yellow icon when active.
-
-### Number Plate (signature)
-A 50 by 38 tile with 7px corners carrying a Barlow 800 italic numeral, like a rally car's door number.
-- **Running / queued:** ink-white plate, navy two-digit position (01, 02).
-- **Delivered:** gold plate carrying the file format (MP4, MP3, IMG) at 17px, so the plate reads as a label and never as a checkbox.
-- **Stopped, reading, retrying:** top-panel plate with a muted icon (pause, spinner, retry).
-- **Failed:** red plate with a warning icon.
-- The first-run "how it works" strip numbers its three steps with smaller plates (40 by 34).
-
-### Livery Stripe (signature)
-Progress drawn as a raked yellow stripe, 7px tall, on the bottom edge of a row over the stripe-track groove.
-- **Running:** yellow, width equals percent, the right end raked; width eases over 0.6s with the house curve (`cubic-bezier(0.16, 1, 0.3, 1)`).
-- **Indeterminate (reading the link, gallery download of unknown size):** a 26% yellow segment sweeping across in 1.6s, repeating.
-- **Stopped (queued, paused, retry wait):** dim navy fill at the reached width.
-- **Failed:** full width, red, no rake.
-- **Delivered:** full width, gold, no rake, on every delivered row, static.
-- **Arriving:** only when a download completes during the current session, the gold wipes in from left to right once (0.9s).
-- **Reduced motion:** all motion collapses; the indeterminate stripe becomes static yellow diagonal hatching across the full width, which still says "in progress".
-- **Title bar:** a 3px stripe on a transparent track shows the aggregate of all running downloads.
-
-### Download Row
-A full-width rally car: plate, 96 by 54 thumbnail (galleries show a 1 to 4 image mosaic), title in ink and a meta line ("Canal · YouTube · MP4 360p · 6,6 MB de 15,9 MB"), then the reading (yellow live numeral with speed and time left, or the italic state word in muted, gold or red), then actions ("Abrir" plus a folder icon and an overflow menu on delivered rows). Error rows wrap a red notice under the text. Panel navy, 12px corners, 1px rule border, minimum 76px tall with extra bottom padding for the stripe.
-
-### Sticky Action Bar
-Every preview ends in a bar that sticks to the bottom of the scroll area, so the yellow plate stays on screen however long the list grows. Left side: the running total; right side: secondary "Pôr na fila" then the large yellow plate whose label states the count and type ("Baixar 246 áudios").
-
-### Selection Pickers
-Playlist, channel and gallery pickers offer list and grid views. Each entry has a checkbox (yellow fill), a dim italic index numeral, a thumbnail and the title; unselected grid tiles fade to 38% opacity. Entries already downloaded are struck through in gold with a gold "já baixado" marker, and a count of them sits above the list. The running total ("246 de 246 marcados · 106 h 46 min") is always visible, in the action bar or a total line.
-
-### Notices, Toasts, Dialogs
-- **Notices:** 10px-cornered strips with an icon: gold tint for "already downloaded" and soft warnings, panel navy for information, red tint for errors.
-- **Toasts:** raised panel, strong-rule border, 11px corners, gold icon (red on error), sliding up 8px over 0.22s.
-- **Dialogs:** floor-navy body, strong-rule border, 14px corners, ruled header and footer, footer actions right-aligned with the primary plate last.
+There is no side rail. The title bar carries the icon and name, the tool-health button (a navy dot that turns red when a tool is missing), the Ajustes toggle (Top Panel and a yellow icon while open) and native window controls (the close button hovers Windows red #c42b1c). Ajustes uses 40px tabs with a 3px yellow underline and a sticky section index on the left.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** keep exactly one solid yellow plate (the primary button) per screen or dialog, at the end of the reading order; when a preview opens, move it into the sticky action bar.
-- **Do** show progress as the livery stripe on the row's bottom edge: yellow and raked while running, gold and full when delivered.
-- **Do** keep every delivered row's stripe gold and static; animate the gold wipe only for an arrival during the session.
-- **Do** put the file format on the delivered row's gold plate (MP4, MP3, IMG).
-- **Do** set every changing number in tabular figures, and live numbers in Barlow Condensed ExtraBold Italic.
-- **Do** derive every new surface or text tone from the navy hue; nest wells darker than their panel.
-- **Do** separate regions with 1px rule-navy lines.
-- **Do** show a running total on every selection and strike already-downloaded entries in gold.
-- **Do** keep the Vídeo / Áudio / Imagens switch visible above the link field, beside the heading.
-- **Do** respect reduced motion: replace sweeping motion with static yellow hatching.
+- **Do** keep yellow for live and act, gold for delivered and red for failed, and make warnings and hints navy.
+- **Do** set every numeral on the scoreboard, the zone tiles and the live percent in Archivo 800 at 70% width with tabular figures, at 44, 26 or 17px only.
+- **Do** drive any new table or scoreboard column through the shared col-* variables, so the board and the table stay aligned.
+- **Do** drop whole columns at the 1400 / 1180 / 1060px breakpoints and move their values to the line underneath.
+- **Do** build sublines and meta lines from whole parts that wrap away together, so no number is ever cut in half.
+- **Do** write on yellow, gold and red in Chassis Navy.
+- **Do** keep pages flat. Reserve shadows for menus, toasts, dialogs, the Ajustes panel and the sticky action bar.
+- **Do** total every list's time and size right-aligned at its foot.
 
 ### Don't:
-- **Don't** use yellow for finished or waiting states, or for the active chip or segment tile; done is gold, waiting is dim navy, the active tile is top-panel navy (only its icon turns yellow).
-- **Don't** use neutral grey for text or surfaces.
-- **Don't** set headings, buttons or sentences in Barlow Condensed.
-- **Don't** put gradients or glow on resting surfaces, or shadows on cards and rows; only floating layers and the sticky bar edge cast shadows.
-- **Don't** use a check mark on the delivered plate; it reads as a checkbox.
-- **Don't** nest a card inside a card; inline panels inside a card are plain ruled lists.
-- **Don't** leave the primary action where a long list can scroll it out of view.
+- **Don't** use gold for warnings, hints or "attention". Gold only ever means delivered.
+- **Don't** write "AO VIVO" anywhere but the scoreboard, or paint a thumbnail badge in a state colour. A livestream source reads "Transmissão ao vivo" on a navy badge.
+- **Don't** use yellow decoratively. If it is not live and not an action, it is not yellow.
+- **Don't** add a fourth numeral size or set words in Archivo.
+- **Don't** squeeze a column or ellipsise a number to make a narrow window fit.
+- **Don't** add a side rail or a page that replaces the main screen. Ajustes slides over the table.
+- **Don't** use pure grey text or a light theme.

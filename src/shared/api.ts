@@ -21,7 +21,7 @@ import type {
 /** O que a interface pode pedir para o motor. Exposto em window.api pelo preload. */
 export interface ApiSubaru {
   // Fila
-  /** Lê o link para a prévia da tela Baixar (e diz se já foi baixado antes). */
+  /** Lê o link para a prévia (e diz se já foi baixado antes). */
   lerLink(url: string): Promise<{ info: InfoMidia; duplicado: Duplicado | null }>
   adicionar(urls: string[], opcoes?: Partial<OpcoesDownload>, iniciar?: boolean): Promise<{ adicionados: number; duplicados: Duplicado[] }>
   adicionarMesmoAssim(urls: string[], opcoes?: Partial<OpcoesDownload>, iniciar?: boolean): Promise<void>

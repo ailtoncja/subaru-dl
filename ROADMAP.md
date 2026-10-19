@@ -131,6 +131,14 @@ andando logo embaixo), **Downloads** (fila, concluídos e falhas, imagens inclu�
 ferramentas e registro). Cada download vira uma linha com placa de número e uma faixa amarela que avança e
 fica dourada na chegada. Playlists somam o tempo do que está marcado e riscam o que já foi baixado.
 
+## Interface (v0.8) — "Placar Ao Vivo"
+Escolhida entre alternativas desenhadas: os downloads como uma rodada de futebol ao vivo, nas três cores Subaru.
+Uma tela só, sem menu lateral: Vídeo / Áudio / Imagens e o campo do link no alto; enquanto algo baixa, o **placar
+ao vivo** mostra a porcentagem, o tempo que falta e a velocidade como o relógio de uma partida; embaixo, a
+**tabela** com tudo (ao vivo, na fila, concluídos e falhas), com o número na cor da situação e cinco marcas de
+progresso. Em janela estreita a tabela perde colunas inteiras. **Ajustes** virou um painel que desliza por cima da
+tabela, com o campo e o placar à vista.
+
 ## Fora do escopo (removidos)
 6 busca no YouTube · 9 guia de dicas · 66–70 biblioteca (tags, coleções, dividir) · 72–73 página Dados ·
 23 limite de velocidade · 24 agendar downloads · 34 seguir canais · 40 pular lives · 41 agendar live ·

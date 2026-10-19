@@ -8,7 +8,7 @@ export type ItemMenu = { icone: LucideIcon; texto: string; acao: () => unknown; 
  * Botão "⋯" com menu. O menu é desenhado direto no <body> com posição fixa,
  * então não é cortado pelo cartão nem empurra o layout.
  */
-export function MenuAcoes({ itens, titulo = 'Mais ações' }: { itens: ItemMenu[]; titulo?: string }) {
+export function MenuAcoes({ itens, titulo = 'Mais ações', leve }: { itens: ItemMenu[]; titulo?: string; leve?: boolean }) {
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
   const botao = useRef<HTMLButtonElement>(null)
   const menu = useRef<HTMLDivElement>(null)
@@ -51,7 +51,7 @@ export function MenuAcoes({ itens, titulo = 'Mais ações' }: { itens: ItemMenu[
 
   return (
     <>
-      <button ref={botao} className="icone-btn" title={titulo} onClick={abrir}>
+      <button ref={botao} className={`icone-btn${leve ? ' leve' : ''}`} title={titulo} onClick={abrir}>
         <MoreHorizontal />
       </button>
       {pos &&
@@ -247,7 +247,8 @@ export function Dialogo({
     return () => window.removeEventListener('keydown', tecla)
   }, [aoFechar])
 
-  return (
+  // Desenhado direto no <body>: nada em volta (célula de tabela, painel com rolagem) corta ou muda o texto do diálogo
+  return createPortal(
     <div className="fundo-dialogo" onMouseDown={(e) => e.target === e.currentTarget && aoFechar()}>
       <div className={`dialogo${largo ? ' largo' : ''}`} role="dialog">
         <header>
@@ -259,7 +260,8 @@ export function Dialogo({
         <div className="corpo-dialogo">{children}</div>
         {rodape && <footer>{rodape}</footer>}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
