@@ -1,5 +1,5 @@
 // Lista de vários links: cada linha com a sua pasta, um "Ver" (prévia) e remover.
-// Usada no Início (vídeos) e na Galeria (imagens).
+// Usada na tela Baixar, no modo vídeo/áudio e no modo imagens.
 import { ChevronDown, ChevronUp, ClipboardPaste, FileText, FolderOpen, Loader2, X } from 'lucide-react'
 import { type ReactNode } from 'react'
 import { avisar, extrairLinks } from '../estado'

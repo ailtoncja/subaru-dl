@@ -22,17 +22,17 @@ export default function Dependencias() {
   }
 
   return (
-    <div className="pagina">
-      <div className="cabecalho">
-        <h1>Dependências</h1>
+    <div className="fluxo">
+      <div className="ferramentas-barra">
+        <span className="muted pequeno flex-1">Tudo vem embutido no programa. Atualize quando um site parar de funcionar.</span>
         <button className="btn" disabled={algumaAtualizando} onClick={() => window.api.ferramentas().then((f) => useEstado.setState({ ferramentas: f }))}>
           <RefreshCw /> Verificar versões
         </button>
-        <button className="btn amarelo" disabled={algumaAtualizando} onClick={atualizarTodas}>
+        <button className="btn" disabled={algumaAtualizando} onClick={atualizarTodas}>
           <Download /> Atualizar tudo
         </button>
       </div>
-      <div className="secao" style={{ gap: 18 }}>
+      <div className="secao" style={{ gap: 22 }}>
         <Secao titulo="Ferramentas embutidas">
           {ferramentas.map((f) => {
             const Icone = ICONES[f.nome]
@@ -44,7 +44,7 @@ export default function Dependencias() {
                 <div className="flex-1">
                   <strong>{f.nome}</strong> <span className="muted">· {f.descricao}</span>
                   <div className="pequeno">
-                    {f.versao ? <span className="mono muted">{f.versao}</span> : <span className="erro-texto">Não encontrado</span>}
+                    {f.versao ? <span className="versao">{f.versao}</span> : <span className="erro-texto">Não encontrado</span>}
                     {f.mensagem && (
                       <span className={f.mensagem.startsWith('Erro') ? 'erro-texto' : 'ok-texto'} style={{ marginLeft: 10 }}>
                         {f.mensagem}

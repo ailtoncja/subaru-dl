@@ -1,7 +1,9 @@
 import { create } from 'zustand'
 import type { Configuracoes, Duplicado, EntradaHistorico, EntradaLog, EstadoFerramenta, ItemFila, ItemGaleria, ItemLote, OpcoesDownload } from '@shared/tipos'
 
-export type Pagina = 'inicio' | 'downloads' | 'galeria' | 'logs' | 'dependencias' | 'configuracoes'
+export type Pagina = 'baixar' | 'downloads' | 'ajustes'
+/** Abas de Ajustes: preferências, ferramentas embutidas (antigas Dependências) e o registro (antigos Logs) */
+export type AbaAjustes = 'preferencias' | 'ferramentas' | 'registro'
 
 export interface Toast {
   id: number
@@ -22,23 +24,26 @@ interface PedidoDuplicados {
 
 interface Estado {
   pagina: Pagina
+  abaAjustes: AbaAjustes
   fila: ItemFila[]
   historico: EntradaHistorico[]
   galeria: ItemGaleria[]
   config: Configuracoes | null
   logs: EntradaLog[]
   ferramentas: EstadoFerramenta[]
-  /** Link copiado no navegador, oferecido na tela Início */
+  /** Link copiado no navegador, oferecido na tela Baixar */
   linkCopiado: string | null
-  /** Link que a tela Início deve abrir (Ctrl+V, botão Colar URL) */
+  /** Link que a tela Baixar deve abrir (Ctrl+V em qualquer tela) */
   linkParaAbrir: string | null
   duplicados: PedidoDuplicados | null
   toasts: Toast[]
   ir: (p: Pagina) => void
+  irAjustes: (aba: AbaAjustes) => void
 }
 
 export const useEstado = create<Estado>((set) => ({
-  pagina: 'inicio',
+  pagina: 'baixar',
+  abaAjustes: 'preferencias',
   fila: [],
   historico: [],
   galeria: [],
@@ -49,8 +54,12 @@ export const useEstado = create<Estado>((set) => ({
   linkParaAbrir: null,
   duplicados: null,
   toasts: [],
-  ir: (pagina) => set({ pagina })
+  ir: (pagina) => set({ pagina }),
+  irAjustes: (abaAjustes) => set({ pagina: 'ajustes', abaAjustes })
 }))
+
+/** Quando o programa abriu: o que chegou depois disso aparece como "entregue agora" na tela Baixar. */
+export const INICIO_SESSAO = Date.now()
 
 let proximoToast = 1
 export function avisar(texto: string, tipo: Toast['tipo'] = 'info'): void {
@@ -87,9 +96,9 @@ export async function adicionarLote(lote: ItemLote[], iniciar: boolean): Promise
   return r.adicionados
 }
 
-/** Abre um link na tela Início (prévia). */
+/** Abre um link na tela Baixar (prévia). */
 export function abrirNoInicio(url: string): void {
-  useEstado.setState({ linkParaAbrir: url, linkCopiado: null, pagina: 'inicio' })
+  useEstado.setState({ linkParaAbrir: url, linkCopiado: null, pagina: 'baixar' })
 }
 
 export const extrairLinks = (texto: string): string[] => texto.match(/https?:\/\/[^\s"'<>]+/gi) ?? []

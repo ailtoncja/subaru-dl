@@ -1,7 +1,8 @@
-// Janela "Opções avançadas" de um download: usada na prévia da tela Início e nos itens da fila.
+// "Opções avançadas" de um download: dentro da prévia da tela Baixar (embutidas) e numa janela nos itens da fila.
 import { Film, Info, LayoutGrid, List, Split } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { bytes, dataUpload, duracao, lerTempo, numero } from '@shared/formatar'
+import { useEstado } from '../estado'
+import { bytes, dataUpload, duracao, lerTempo, numero, tempoTotal } from '@shared/formatar'
 import { codecCurto, escolherFormatos, temAudio, temVideo } from '@shared/formatos'
 import { urlMiniaturaRemota } from '@shared/miniatura'
 import type { EntradaPlaylist, InfoMidia, OpcoesDownload } from '@shared/tipos'
@@ -19,7 +20,8 @@ export default function OpcoesAvancadas({
   mudar,
   aoFechar,
   bloqueado,
-  aoSepararPlaylist
+  aoSepararPlaylist,
+  embutido
 }: {
   titulo: string
   info: InfoMidia | null
@@ -29,6 +31,8 @@ export default function OpcoesAvancadas({
   /** Texto explicando por que não dá para editar (download em andamento). */
   bloqueado?: string | null
   aoSepararPlaylist?: () => void
+  /** Dentro do cartão da prévia (sem janela por cima) */
+  embutido?: boolean
 }) {
   const abas: Array<[Aba, string]> = [
     ['qualidade', 'Qualidade'],
@@ -42,11 +46,11 @@ export default function OpcoesAvancadas({
   const [aba, setAba] = useState<Aba>('qualidade')
   const o = opcoes
 
-  return (
-    <Dialogo titulo={titulo} aoFechar={aoFechar} largo rodape={<button className="btn primario" onClick={aoFechar}>Pronto</button>}>
-      <div className="abas">
+  const corpo = (
+    <>
+      <div className="abas" role="tablist">
         {abas.map(([id, nome]) => (
-          <button key={id} className={aba === id ? 'ativo' : ''} onClick={() => setAba(id)}>
+          <button key={id} role="tab" aria-selected={aba === id} className={aba === id ? 'ativo' : ''} onClick={() => setAba(id)}>
             {nome}
           </button>
         ))}
@@ -60,7 +64,7 @@ export default function OpcoesAvancadas({
       <div style={bloqueado && aba !== 'detalhes' ? { opacity: 0.5, pointerEvents: 'none' } : undefined}>
         {aba === 'qualidade' && (
           <div className="cartao">
-            <EditorQualidade o={o} mudar={mudar} info={info} />
+            <EditorQualidade o={o} mudar={mudar} info={info} semTipo={embutido} />
           </div>
         )}
         {aba === 'formatos' && info && <TabelaFormatos info={info} o={o} mudar={mudar} />}
@@ -84,6 +88,14 @@ export default function OpcoesAvancadas({
         {aba === 'playlist' && info?.playlist && <EditorPlaylist info={info} o={o} mudar={mudar} aoSeparar={aoSepararPlaylist} />}
       </div>
       {aba === 'detalhes' && info && <Detalhes info={info} />}
+    </>
+  )
+
+  if (embutido) return <div className="painel-avancado">{corpo}</div>
+
+  return (
+    <Dialogo titulo={titulo} aoFechar={aoFechar} largo rodape={<button className="btn primario" onClick={aoFechar}>Pronto</button>}>
+      {corpo}
     </Dialogo>
   )
 }
@@ -286,9 +298,23 @@ function CapaVideo({ e }: { e: EntradaPlaylist }) {
   )
 }
 
-/** Lista para marcar os vídeos da playlist, em lista ou em grade de capas (também usada na prévia da tela Início). */
-export function ListaPlaylist({ info, o, mudar }: { info: InfoMidia; o: OpcoesDownload; mudar: Mudar }) {
+/** Quantos vídeos marcados, o tempo somado e, no áudio, o tamanho aproximado pela taxa de bits. */
+export function somaPlaylist(info: InfoMidia, o: OpcoesDownload): { marcados: number; total: number; segundos: number; tamanho: number | null } {
   const pl = info.playlist!
+  const selecao = expandir(o.itensPlaylist, pl.total)
+  const segundos = pl.entradas.reduce((t, e) => t + (selecao.has(e.indice) ? (e.duracao ?? 0) : 0), 0)
+  const tamanho = o.modo === 'audio' && o.bitrateAudio > 0 && segundos ? (o.bitrateAudio * 1000 * segundos) / 8 : null
+  return { marcados: selecao.size, total: pl.total, segundos, tamanho }
+}
+
+/** Lista para marcar os vídeos da playlist, em lista ou em grade de capas (também usada na prévia da tela Baixar). */
+/** semSoma: a prévia já mostra o total na barra de ações presa no pé da tela. */
+export function ListaPlaylist({ info, o, mudar, semSoma }: { info: InfoMidia; o: OpcoesDownload; mudar: Mudar; semSoma?: boolean }) {
+  const pl = info.playlist!
+  const historico = useEstado((s) => s.historico)
+  // O que já foi baixado antes aparece riscado (comparando pelo id do vídeo ou pelo link)
+  const baixados = useMemo(() => new Set(historico.flatMap((h) => [h.idMidia, h.url])), [historico])
+  const jaBaixado = (e: EntradaPlaylist) => baixados.has(e.id) || baixados.has(e.url)
   const [grade, setGrade] = useState(() => {
     try {
       return localStorage.getItem('playlistGrade') === '1'
@@ -312,12 +338,14 @@ export function ListaPlaylist({ info, o, mudar }: { info: InfoMidia; o: OpcoesDo
       /* sem armazenamento: só não lembra */
     }
   }
+  // Total corrido da seleção: tempo somado e, no áudio, o tamanho aproximado pela taxa de bits
+  const segundos = pl.entradas.reduce((t, e) => t + (selecao.has(e.indice) ? (e.duracao ?? 0) : 0), 0)
+  const tamanho = o.modo === 'audio' && o.bitrateAudio > 0 && segundos ? (o.bitrateAudio * 1000 * segundos) / 8 : null
+  const repetidos = pl.entradas.filter((e) => selecao.has(e.indice) && jaBaixado(e)).length
+
   return (
     <>
-      <div className="flex">
-        <span className="muted pequeno flex-1">
-          {selecao.size} de {pl.total} marcados
-        </span>
+      <div className="total-corrido">
         <span className="alternador" role="group" aria-label="Modo de exibição">
           <button className={grade ? '' : 'ativo'} title="Lista" onClick={() => escolherModo(false)}>
             <List />
@@ -332,13 +360,26 @@ export function ListaPlaylist({ info, o, mudar }: { info: InfoMidia; o: OpcoesDo
         <button className="btn pequeno" onClick={() => definir(new Set())}>
           Desmarcar
         </button>
+        <span className="soma">
+          {!semSoma && (
+            <>
+              <b>
+                {selecao.size} de {pl.total}
+              </b>{' '}
+              marcados
+              {segundos > 0 && ` · ${tempoTotal(segundos)}`}
+              {tamanho ? ` · ~${bytes(tamanho)}` : ''}
+            </>
+          )}
+          {repetidos > 0 && `${semSoma ? '' : ' · '}${repetidos} já ${repetidos === 1 ? 'baixado' : 'baixados'} (riscados)`}
+        </span>
       </div>
       {grade ? (
         <div className="grade-videos">
           {pl.entradas.map((e) => {
             const marcado = selecao.has(e.indice)
             return (
-              <label key={e.indice} className={marcado ? 'video marcado' : 'video'} title={e.titulo}>
+              <label key={e.indice} className={`video${marcado ? ' marcado' : ''}${jaBaixado(e) ? ' ja-baixado' : ''}`} title={jaBaixado(e) ? `${e.titulo} (já baixado)` : e.titulo}>
                 <span className="capa-wrap">
                   <CapaVideo e={e} />
                   <input type="checkbox" checked={marcado} onChange={(ev) => alternar(e.indice, ev.target.checked)} />
@@ -357,8 +398,9 @@ export function ListaPlaylist({ info, o, mudar }: { info: InfoMidia; o: OpcoesDo
               <input type="checkbox" checked={selecao.has(e.indice)} onChange={(ev) => alternar(e.indice, ev.target.checked)} />
               <span className="num">{e.indice}</span>
               <CapaVideo e={e} />
-              <span className="flex-1 truncar">{e.titulo}</span>
-              <span className="muted pequeno mono">{duracao(e.duracao)}</span>
+              <span className={`flex-1 truncar${jaBaixado(e) ? ' ja-baixado' : ''}`}>{e.titulo}</span>
+              {jaBaixado(e) && <span className="marca-baixado">já baixado</span>}
+              <span className="muted pequeno tabular">{duracao(e.duracao)}</span>
             </label>
           ))}
         </div>

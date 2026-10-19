@@ -14,6 +14,16 @@ export function velocidade(n: number | null | undefined): string {
 }
 
 /** 3725 → "1:02:05" */
+/** Tempo total por extenso, para somas (playlists): "106 h 46 min", "48 min", "35 s". */
+export function tempoTotal(segundos: number): string {
+  const s = Math.round(segundos)
+  if (s < 60) return `${s} s`
+  const h = Math.floor(s / 3600)
+  const m = Math.round((s % 3600) / 60)
+  if (!h) return `${m} min`
+  return m ? `${h} h ${m} min` : `${h} h`
+}
+
 export function duracao(segundos: number | null | undefined): string {
   if (segundos == null || !isFinite(segundos)) return '—'
   const s = Math.round(segundos)

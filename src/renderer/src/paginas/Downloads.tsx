@@ -1,19 +1,18 @@
-// Tela Downloads: fila e histórico (foto de referência 1).
-import { ArrowRight, CheckCircle2, FolderOpen, History, Inbox, Pause, Play, Search, Trash2, XCircle } from 'lucide-react'
+// Downloads: o que está na fila, o que já chegou e o que falhou — vídeos, áudios e imagens juntos.
+import { CheckCircle2, FolderOpen, Inbox, Pause, Play, Search, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { velocidade } from '@shared/formatar'
-import type { EntradaHistorico, ItemFila as TItem } from '@shared/tipos'
+import type { EntradaHistorico, ItemFila as TItem, ItemGaleria } from '@shared/tipos'
 import { Segmentado } from '../componentes/ui'
 import { useEstado } from '../estado'
-import ItemFila, { ItemConcluido } from './ItemFila'
+import ItemFila, { ItemConcluido, ItemDaGaleria, nomeGaleria } from './ItemFila'
 
 type Aba = 'andamento' | 'concluidos' | 'falhas'
-type Tipo = 'todos' | 'video' | 'audio'
+type Tipo = 'todos' | 'video' | 'audio' | 'imagens'
 
 const EM_ANDAMENTO = ['buscando', 'pronto', 'baixando', 'processando', 'pausado', 'aguardando-nova-tentativa']
 
 export default function Downloads() {
-  const { fila, historico, config } = useEstado()
+  const { fila, historico, galeria, config } = useEstado()
   const [aba, setAba] = useState<Aba>('andamento')
   const [busca, setBusca] = useState('')
   const [tipo, setTipo] = useState<Tipo>('todos')
@@ -34,137 +33,131 @@ export default function Downloads() {
   const termo = busca.trim().toLowerCase()
   const bateItem = (i: TItem) =>
     (!termo || `${i.info?.titulo ?? i.url} ${i.info?.canal ?? ''}`.toLowerCase().includes(termo)) && (tipo === 'todos' || i.opcoes.modo === tipo)
-  const bateHistorico = (h: EntradaHistorico) =>
-    (!termo || `${h.titulo} ${h.canal ?? ''}`.toLowerCase().includes(termo)) && (tipo === 'todos' || h.modo === tipo)
+  const bateHistorico = (h: EntradaHistorico) => (!termo || `${h.titulo} ${h.canal ?? ''}`.toLowerCase().includes(termo)) && (tipo === 'todos' || h.modo === tipo)
+  const bateGaleria = (g: ItemGaleria) => (!termo || nomeGaleria(g.url).toLowerCase().includes(termo)) && (tipo === 'todos' || tipo === 'imagens')
 
   const andamento = useMemo(() => fila.filter((i) => EM_ANDAMENTO.includes(i.status)), [fila])
-  const falhas = useMemo(() => fila.filter((i) => i.status === 'erro'), [fila])
-  const ativos = fila.filter((i) => i.status === 'baixando' || i.status === 'processando')
+  const galeriaAndamento = useMemo(() => galeria.filter((g) => g.status === 'aguardando' || g.status === 'baixando' || g.status === 'pausado'), [galeria])
+  const galeriaConcluida = useMemo(() => [...galeria].reverse().filter((g) => g.status === 'concluido'), [galeria])
+  const falhasFila = useMemo(() => fila.filter((i) => i.status === 'erro'), [fila])
+  const falhasGaleria = useMemo(() => galeria.filter((g) => g.status === 'erro'), [galeria])
+
+  const ativos = fila.filter((i) => i.status === 'baixando' || i.status === 'processando').length + galeria.filter((g) => g.status === 'baixando').length
   const pendentes = fila.filter((i) => i.status === 'pronto' || i.status === 'pausado').length
-  const total = ativos.reduce((t, i) => t + (i.progresso.velocidade ?? 0), 0)
-  const [numero, unidade] = total ? velocidade(total).split(' ') : ['0', 'B/s']
+
+  const nAndamento = andamento.length + galeriaAndamento.length
+  const nConcluidos = historico.length + galeriaConcluida.length
+  const nFalhas = falhasFila.length + falhasGaleria.length
+
+  const vAndamento = andamento.filter(bateItem)
+  const vGaleriaAndamento = galeriaAndamento.filter(bateGaleria)
+  const vHistorico = historico.filter(bateHistorico)
+  const vGaleriaConcluida = galeriaConcluida.filter(bateGaleria)
+  const vFalhasFila = falhasFila.filter(bateItem)
+  const vFalhasGaleria = falhasGaleria.filter(bateGaleria)
 
   return (
     <div className="pagina">
-      <div className="cartao resumo">
-        <div className="grande">
-          {numero}
-          <small>{unidade.toUpperCase()}</small>
-        </div>
-        <div className="divisor" />
-        <div className="contas">
-          <span>
-            <span className={`ponto${ativos.length ? ' azul' : ''}`} style={{ display: 'inline-block', marginRight: 8 }} />
-            <b>{ativos.length}</b> baixando
-          </span>
-          <span>·</span>
-          <span>
-            <b>{pendentes}</b> na fila
-          </span>
-          <span>·</span>
-          <span>
-            <b>{historico.length}</b> concluídos
-          </span>
-        </div>
-        {ativos.length > 0 ? (
+      <div className="cabecalho">
+        <h1>Downloads</h1>
+        {ativos > 0 ? (
           <button className="btn" onClick={() => window.api.pausarTodos()}>
-            <Pause className="amarelo" /> Pausar Todos
+            <Pause /> Pausar tudo
           </button>
         ) : (
-          <button className="btn" disabled={!pendentes} onClick={() => window.api.iniciarFila()}>
-            <Play className="amarelo" /> Baixar Tudo
-          </button>
+          pendentes > 0 && (
+            <button className="btn primario" onClick={() => window.api.iniciarFila()}>
+              <Play /> Baixar a fila ({pendentes})
+            </button>
+          )
         )}
-        <button className="btn primario" onClick={() => window.api.abrirPasta(config!.pastaVideo)}>
-          <FolderOpen /> Abrir Pasta de Downloads
+        <button className="btn" onClick={() => window.api.abrirPasta(config!.pastaVideo)}>
+          <FolderOpen /> Abrir pasta
         </button>
       </div>
 
-      <div className="cartao barra-filtros">
+      <div className="barra-filtros">
         <Segmentado
           valor={aba}
           aoMudar={setAba}
           opcoes={[
-            { valor: 'andamento', nome: <>Em Andamento <span className="numero">{andamento.length}</span></> },
-            { valor: 'concluidos', nome: <>Concluídos <span className="numero">{historico.length}</span></> },
-            { valor: 'falhas', nome: <>Falhas <span className="numero">{falhas.length}</span></> }
+            { valor: 'andamento', nome: <>Na fila <span className="numero">{nAndamento}</span></> },
+            { valor: 'concluidos', nome: <>Concluídos <span className="numero">{nConcluidos}</span></> },
+            { valor: 'falhas', nome: <>Falhas <span className="numero">{nFalhas}</span></> }
           ]}
         />
         <div className="busca">
           <Search />
-          <input ref={campoBusca} placeholder="Filtrar por nome ou canal…" value={busca} onChange={(e) => setBusca(e.target.value)} />
-          <span className="kbd">/</span>
+          <input ref={campoBusca} placeholder="Procurar por nome ou canal" aria-label="Procurar nos downloads" value={busca} onChange={(e) => setBusca(e.target.value)} />
+          <span className="kbd" title="Atalho">/</span>
         </div>
-        <div className="segmentado">
-          {(['todos', 'video', 'audio'] as Tipo[]).map((t) => (
-            <button key={t} className={tipo === t ? 'ativo' : ''} style={{ padding: '5px 12px', fontSize: 12.5 }} onClick={() => setTipo(t)}>
-              {t === 'todos' ? 'Todos' : t === 'video' ? 'Vídeo' : 'Áudio'}
-            </button>
-          ))}
-        </div>
+        <Segmentado
+          valor={tipo}
+          aoMudar={setTipo}
+          opcoes={[
+            { valor: 'todos', nome: 'Todos' },
+            { valor: 'video', nome: 'Vídeo' },
+            { valor: 'audio', nome: 'Áudio' },
+            { valor: 'imagens', nome: 'Imagens' }
+          ]}
+        />
       </div>
 
-      {aba === 'andamento' && (
-        <>
-          <div className="titulo-secao">
-            <span className={`ponto${ativos.length ? ' azul' : ''}`} />
-            <h2>Fila Ativa ({andamento.length} {andamento.length === 1 ? 'tarefa' : 'tarefas'})</h2>
-            <span className="direita">{config!.simultaneos} ao mesmo tempo</span>
-          </div>
-          {andamento.filter(bateItem).length ? (
+      {aba === 'andamento' &&
+        (vAndamento.length || vGaleriaAndamento.length ? (
+          <>
+            <div className="titulo-secao">
+              <h2>Na fila</h2>
+              <span className="contagem">
+                {ativos} baixando · {config!.simultaneos} ao mesmo tempo
+              </span>
+            </div>
             <div className="lista">
-              {andamento.filter(bateItem).map((i) => (
-                <ItemFila key={i.id} item={i} />
+              {vAndamento.map((i, n) => (
+                <ItemFila key={i.id} item={i} posicao={n + 1} />
+              ))}
+              {vGaleriaAndamento.map((g, n) => (
+                <ItemDaGaleria key={g.id} item={g} posicao={vAndamento.length + n + 1} />
               ))}
             </div>
-          ) : (
-            <div className="cartao vazio">
-              <Inbox />
-              <strong>{andamento.length ? 'Nada com esse filtro' : 'Nenhum download em andamento'}</strong>
-              <span>{andamento.length ? '' : 'Cole um link na tela Início para começar.'}</span>
-            </div>
-          )}
-
-          {historico.length > 0 && (
-            <>
-              <div className="titulo-secao">
-                <History />
-                <h2>Histórico Recente</h2>
-                <button className="link-amarelo direita" onClick={() => setAba('concluidos')}>
-                  Ver todos os {historico.length} arquivos <ArrowRight />
-                </button>
-              </div>
-              <div className="lista">
-                {historico.filter(bateHistorico).slice(0, 3).map((h) => (
-                  <ItemConcluido key={h.id} entrada={h} />
-                ))}
-              </div>
-            </>
-          )}
-        </>
-      )}
+          </>
+        ) : (
+          <div className="cartao vazio">
+            <Inbox />
+            <strong>{nAndamento ? 'Nada com esse filtro' : 'Nada na fila'}</strong>
+            <span>{nAndamento ? 'Mude a busca ou o tipo.' : 'Cole um link na tela Baixar para começar.'}</span>
+          </div>
+        ))}
 
       {aba === 'concluidos' && (
         <>
-          <div className="titulo-secao">
-            <CheckCircle2 style={{ color: 'var(--ok)' }} />
-            <h2>Concluídos</h2>
-            {historico.length > 0 && (
-              <button className="btn fantasma pequeno direita" onClick={() => window.api.limparHistorico()} title="Só limpa a lista; os arquivos continuam no disco">
-                <Trash2 /> Limpar lista
+          {nConcluidos > 0 && (
+            <div className="titulo-secao">
+              <h2>Concluídos</h2>
+              <span className="contagem">os mais novos primeiro</span>
+              <button
+                className="btn fantasma pequeno direita"
+                onClick={() => (window.api.limparHistorico(), window.api.limparGaleriaConcluidos())}
+                title="Só limpa a lista; os arquivos continuam no disco"
+              >
+                <Trash2 /> Limpar a lista
               </button>
-            )}
-          </div>
-          {historico.filter(bateHistorico).length ? (
+            </div>
+          )}
+          {vHistorico.length || vGaleriaConcluida.length ? (
             <div className="lista">
-              {historico.filter(bateHistorico).slice(0, 300).map((h) => (
+              {vHistorico.slice(0, 300).map((h) => (
                 <ItemConcluido key={h.id} entrada={h} />
+              ))}
+              {vGaleriaConcluida.map((g) => (
+                <ItemDaGaleria key={g.id} item={g} />
               ))}
             </div>
           ) : (
             <div className="cartao vazio">
               <CheckCircle2 />
-              <strong>{historico.length ? 'Nada com esse filtro' : 'Nada baixado ainda'}</strong>
+              <strong>{nConcluidos ? 'Nada com esse filtro' : 'Nada baixado ainda'}</strong>
+              <span>{nConcluidos ? 'Mude a busca ou o tipo.' : 'O que você baixar aparece aqui, com Abrir e Mostrar na pasta.'}</span>
             </div>
           )}
         </>
@@ -172,19 +165,25 @@ export default function Downloads() {
 
       {aba === 'falhas' && (
         <>
-          <div className="titulo-secao">
-            <XCircle style={{ color: 'var(--erro)' }} />
-            <h2>Falhas</h2>
-            {falhas.length > 0 && (
-              <button className="btn fantasma pequeno direita" onClick={() => window.api.remover(falhas.map((i) => i.id))}>
+          {nFalhas > 0 && (
+            <div className="titulo-secao">
+              <h2>Falhas</h2>
+              <span className="contagem">cada uma diz o que aconteceu e o que fazer</span>
+              <button
+                className="btn fantasma pequeno direita"
+                onClick={() => (window.api.remover(falhasFila.map((i) => i.id)), window.api.removerGaleria(falhasGaleria.map((g) => g.id)))}
+              >
                 <Trash2 /> Remover todas
               </button>
-            )}
-          </div>
-          {falhas.filter(bateItem).length ? (
+            </div>
+          )}
+          {vFalhasFila.length || vFalhasGaleria.length ? (
             <div className="lista">
-              {falhas.filter(bateItem).map((i) => (
+              {vFalhasFila.map((i) => (
                 <ItemFila key={i.id} item={i} />
+              ))}
+              {vFalhasGaleria.map((g) => (
+                <ItemDaGaleria key={g.id} item={g} />
               ))}
             </div>
           ) : (

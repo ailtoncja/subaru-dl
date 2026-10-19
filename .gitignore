@@ -4,3 +4,10 @@ dist/
 resources/bin/
 *.log
 *.tsbuildinfo
+
+# impeccable: capturas, esboços e estado local (o PRODUCT.md, o DESIGN.md e .impeccable/surfaces entram no Git)
+.impeccable/review/
+.impeccable/mocks/
+.impeccable/decision-payload.json
+.impeccable/brief-body.md
+.impeccable/hook.cache.json

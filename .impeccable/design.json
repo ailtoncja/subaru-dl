@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-19T12:00:00Z",
+  "title": "Design System: Subaru DL",
+  "extensions": {
+    "colorMeta": {
+      "marinho": { "role": "neutral", "displayName": "Chassis Navy", "canonical": "oklch(20.2% 0.057 268.9)", "tonalRamp": ["#040823", "#1a2341", "#354160", "#546082", "#7481a5", "#96a4ca", "#bac8ef", "#e3eeff"] },
+      "amarelo": { "role": "primary", "displayName": "Rally Yellow", "canonical": "oklch(87.7% 0.180 93.1)", "tonalRamp": ["#170700", "#3a1f00", "#613900", "#845900", "#a77c00", "#c1a231", "#dcc888", "#f9eecd"] },
+      "ouro": { "role": "secondary", "displayName": "Delivery Gold", "canonical": "oklch(78.3% 0.130 89.7)", "tonalRamp": ["#180600", "#3c1d00", "#5d3b00", "#7e5b00", "#a17d00", "#c5a033", "#dfc788", "#f9eed1"] },
+      "barra": { "role": "neutral", "displayName": "Title Bar Navy", "canonical": "oklch(17.7% 0.049 268.2)", "tonalRamp": ["#04091f", "#1b243d", "#37415c", "#55617d", "#7682a0", "#98a5c4", "#bcc9ea", "#e3eeff"] },
+      "chao": { "role": "neutral", "displayName": "Floor Navy", "canonical": "oklch(23.1% 0.069 267.6)", "tonalRamp": ["#020627", "#162246", "#324067", "#506089", "#7081ac", "#92a4d1", "#b6c8f7", "#e3eeff"] },
+      "painel": { "role": "neutral", "displayName": "Panel Navy", "canonical": "oklch(26.8% 0.081 267.9)", "tonalRamp": ["#02042c", "#14214c", "#2f3f6d", "#4d5f90", "#6d81b4", "#8fa4d9", "#b2c8ff", "#e3eeff"] },
+      "painel-2": { "role": "neutral", "displayName": "Raised Panel", "canonical": "oklch(30.3% 0.092 268.0)", "tonalRamp": ["#02042c", "#122051", "#2d3e72", "#4b5e95", "#6b80ba", "#8ca3df", "#b1c8ff", "#e3eeff"] },
+      "painel-3": { "role": "neutral", "displayName": "Top Panel", "canonical": "oklch(34.1% 0.101 268.2)", "tonalRamp": ["#02042c", "#111e55", "#2b3d77", "#495e9b", "#687fbf", "#8aa3e5", "#b1c8ff", "#e3eeff"] },
+      "campo": { "role": "neutral", "displayName": "Well Navy", "canonical": "oklch(19.5% 0.061 268.9)", "tonalRamp": ["#030724", "#192342", "#354063", "#536084", "#7381a8", "#95a4cc", "#b9c8f2", "#e3eeff"] },
+      "linha": { "role": "neutral", "displayName": "Rule Navy", "canonical": "oklch(34.4% 0.105 269.6)", "tonalRamp": ["#03042c", "#121d57", "#2c3c79", "#4a5d9d", "#697fc2", "#8ba2e8", "#b3c7ff", "#e4eeff"] },
+      "linha-forte": { "role": "neutral", "displayName": "Strong Rule", "canonical": "oklch(41.8% 0.118 269.8)", "tonalRamp": ["#03042c", "#111a5d", "#2a3b80", "#475ca4", "#677ec9", "#88a1ef", "#b3c7ff", "#e4eeff"] },
+      "trilho-faixa": { "role": "neutral", "displayName": "Stripe Track", "canonical": "oklch(30.5% 0.094 268.9)", "tonalRamp": ["#03042c", "#131f52", "#2d3e74", "#4b5e97", "#6b80bb", "#8da3e1", "#b2c7ff", "#e3eeff"] },
+      "tinta": { "role": "neutral", "displayName": "Ink", "canonical": "oklch(96.7% 0.006 264.5)", "tonalRamp": ["#0a0b0e", "#242528", "#404245", "#5f6165", "#808286", "#a3a5a9", "#c7c9cd", "#eceef2"] },
+      "muted": { "role": "neutral", "displayName": "Muted Ink", "canonical": "oklch(76.9% 0.044 270.8)", "tonalRamp": ["#05091e", "#1d243b", "#39415a", "#58607b", "#78819e", "#9aa4c2", "#bec8e7", "#e4eeff"] },
+      "dim": { "role": "neutral", "displayName": "Dim Ink", "canonical": "oklch(68.0% 0.066 273.6)", "tonalRamp": ["#050626", "#1b2145", "#373f65", "#555f87", "#7580ab", "#97a3cf", "#bbc7f5", "#e5edff"] },
+      "amarelo-hover": { "role": "primary", "displayName": "Lit Yellow", "canonical": "oklch(89.8% 0.169 96.0)", "tonalRamp": ["#150800", "#382000", "#5d3b00", "#7e5c00", "#a17f00", "#bea432", "#daca88", "#f7efcf"] },
+      "ouro-fundo": { "role": "secondary", "displayName": "Gold Notice Fill", "canonical": "rgb(217 180 74 / 0.1)" },
+      "ouro-borda": { "role": "secondary", "displayName": "Gold Notice Stroke", "canonical": "rgb(217 180 74 / 0.42)" },
+      "erro": { "role": "tertiary", "displayName": "Failure Red", "canonical": "oklch(73.6% 0.161 21.8)", "tonalRamp": ["#240000", "#520005", "#830016", "#aa2c35", "#d15255", "#ec8180", "#fcb3b0", "#ffe5e2"] },
+      "erro-fundo": { "role": "tertiary", "displayName": "Error Notice Fill", "canonical": "rgb(255 123 123 / 0.08)" },
+      "erro-borda": { "role": "tertiary", "displayName": "Error Notice Stroke", "canonical": "rgb(255 123 123 / 0.35)" }
+    },
+    "typographyMeta": {
+      "headline": { "displayName": "Headline", "purpose": "Page heading (\"O que você quer baixar?\", \"Downloads\", \"Ajustes\")." },
+      "title": { "displayName": "Title", "purpose": "Preview card video title; 18px below 1060px." },
+      "title-section": { "displayName": "Section title", "purpose": "\"Seus downloads\", dialog titles; settings group labels at 16px." },
+      "body": { "displayName": "Body", "purpose": "Default text; link field text at 15.5px." },
+      "body-strong": { "displayName": "Row title", "purpose": "Download row titles." },
+      "meta": { "displayName": "Meta", "purpose": "Row meta lines with middle-dot separators, field hints." },
+      "label": { "displayName": "Label", "purpose": "Field labels above selects, in dim ink." },
+      "numeral-live": { "displayName": "Live numeral", "purpose": "Running percentage or file count on a row, in yellow; 26px below 1060px." },
+      "numeral-plate": { "displayName": "Plate numeral", "purpose": "Queue numbers on plates; 17px with 0.02em tracking for format codes (MP4, MP3, IMG)." },
+      "numeral-state": { "displayName": "State word", "purpose": "\"Entregue\", \"Na fila\", \"Pausado\", \"Falhou\"; muted, gold or red by state." },
+      "mono": { "displayName": "Mono", "purpose": "Logs and raw arguments only." }
+    },
+    "fonts": [
+      { "family": "Barlow Condensed", "style": "italic", "weights": [700, 800], "source": "src/renderer/src/fontes/barlow-condensed-700-italic.woff2, barlow-condensed-800-italic.woff2", "licence": "OFL (src/renderer/src/fontes/OFL.txt)", "display": "swap" },
+      { "family": "Segoe UI Variable", "source": "system (Windows)" },
+      { "family": "Cascadia Mono", "source": "system (Windows)" }
+    ],
+    "shadows": [
+      { "name": "action-bar-edge", "value": "0 -10px 24px -14px rgb(2 5 16 / 0.6)", "purpose": "Upward edge of the sticky action bar so content scrolls visibly beneath it." },
+      { "name": "menu", "value": "0 18px 44px rgb(2 5 16 / 0.55)", "purpose": "Dropdown action menus." },
+      { "name": "toast", "value": "0 12px 30px rgb(2 5 16 / 0.5)", "purpose": "Bottom-right toasts." },
+      { "name": "dialog", "value": "0 26px 70px rgb(2 5 16 / 0.6)", "purpose": "Modal dialogs, over a rgb(4 8 20 / 0.74) scrim." }
+    ],
+    "motion": [
+      { "name": "suave", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "House ease-out for stripe width, switch, toast entry and the gold arrival." },
+      { "name": "stripe-advance", "value": "width 0.6s cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Running yellow stripe follows the percentage." },
+      { "name": "stripe-indeterminate", "value": "correr 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite", "purpose": "26% yellow segment sweeping while reading a link or downloading a gallery of unknown size." },
+      { "name": "stripe-arrival", "value": "entregar 0.9s cubic-bezier(0.16, 1, 0.3, 1) both", "purpose": "Gold wipes in left to right once, only for a download delivered during the current session." },
+      { "name": "switch", "value": "0.18s cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Switch track colour and knob travel." },
+      { "name": "toast-enter", "value": "entrar 0.22s cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Toast rises 8px and fades in." },
+      { "name": "reduced-motion", "value": "prefers-reduced-motion: reduce", "purpose": "All animation and transition collapses; the indeterminate stripe becomes static yellow diagonal hatching (repeating-linear-gradient(-60deg, yellow 0 9px, transparent 9px 18px)) across the full width." }
+    ],
+    "breakpoints": [
+      { "name": "narrow-window", "value": "1060px", "purpose": "max-width: rows tighten, thumbnail 72x41, live numeral 26px, page side padding 24px, preview thumbnail column 176px, wide-only action-bar items hidden." },
+      { "name": "minimum-window", "value": "900px", "purpose": "Electron minimum window width; nothing below it." }
+    ],
+    "shape": {
+      "stripeRake": "clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 100%, 0 100%)",
+      "focusRing": "outline: 2px solid var(--amarelo); outline-offset: 2px"
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Button (the yellow plate)",
+      "kind": "button",
+      "refersTo": "button-primary-large",
+      "description": "The one solid yellow action per screen; in a preview it lives in the sticky action bar.",
+      "html": "<button class=\"ds-btn ds-btn-primary\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><path d=\"m7 10 5 5 5-5\"/><path d=\"M12 15V3\"/></svg>Baixar vídeo</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 46px; padding: 0 24px; border: 1px solid var(--amarelo, #ffd200); border-radius: 10px; font: 700 15.5px 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; white-space: nowrap; cursor: pointer; } .ds-btn svg { width: 19px; height: 19px; } .ds-btn-primary { background: var(--amarelo, #ffd200); color: var(--marinho, #0c1430); } .ds-btn-primary:hover { background: var(--amarelo-hover, #ffdc3d); border-color: var(--amarelo-hover, #ffdc3d); } .ds-btn-primary:focus-visible { outline: 2px solid var(--amarelo, #ffd200); outline-offset: 2px; } .ds-btn-primary:disabled { background: var(--painel-3, #22336c); border-color: var(--linha-forte, #34468c); color: var(--dim, #8b96c2); cursor: default; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Raised navy plate for every non-primary action (\"Pôr na fila\", \"Abrir\").",
+      "html": "<button class=\"ds-btn-sec\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 3 20 12 6 21Z\"/></svg>Abrir</button>",
+      "css": ".ds-btn-sec { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 15px; border: 1px solid var(--linha-forte, #34468c); border-radius: 9px; background: var(--painel-2, #1b2a5c); color: var(--tinta, #f2f4f8); font: 600 13.5px 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; cursor: pointer; } .ds-btn-sec svg { width: 17px; height: 17px; } .ds-btn-sec:hover { background: var(--painel-3, #22336c); border-color: #4356a0; } .ds-btn-sec:focus-visible { outline: 2px solid var(--amarelo, #ffd200); outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Transparent muted action that lifts to a raised panel on hover.",
+      "html": "<button class=\"ds-btn-ghost\">Desmarcar</button>",
+      "css": ".ds-btn-ghost { height: 38px; padding: 0 15px; border: 1px solid transparent; border-radius: 9px; background: transparent; color: var(--muted, #a9b3d1); font: 600 13.5px 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; cursor: pointer; } .ds-btn-ghost:hover { background: var(--painel-2, #1b2a5c); color: var(--tinta, #f2f4f8); } .ds-btn-ghost:focus-visible { outline: 2px solid var(--amarelo, #ffd200); outline-offset: 2px; }"
+    },
+    {
+      "name": "Link Field",
+      "kind": "input",
+      "refersTo": "link-field",
+      "description": "The 66px well that takes the link and holds the yellow plate at its right end.",
+      "html": "<label class=\"ds-url\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7\"/><path d=\"M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7\"/></svg><input placeholder=\"Cole o link do vídeo ou da playlist\"><button class=\"ds-url-btn\">Colar link</button></label>",
+      "css": ".ds-url { display: flex; align-items: center; gap: 8px; min-height: 66px; padding: 9px 9px 9px 18px; border: 1px solid var(--linha-forte, #34468c); border-radius: 13px; background: var(--campo, #0a1230); transition: border-color 0.15s; } .ds-url:focus-within { border-color: #5a6dbb; } .ds-url svg { width: 20px; height: 20px; color: var(--dim, #8b96c2); flex: none; } .ds-url input { flex: 1; min-width: 0; border: 0; background: transparent; outline: none; color: var(--tinta, #f2f4f8); caret-color: var(--amarelo, #ffd200); font: 15.5px/1.4 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; } .ds-url input::placeholder { color: var(--dim, #8b96c2); } .ds-url-btn { height: 46px; padding: 0 24px; border: 1px solid var(--amarelo, #ffd200); border-radius: 10px; background: var(--amarelo, #ffd200); color: var(--marinho, #0c1430); font: 700 15.5px 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; cursor: pointer; } .ds-url-btn:hover { background: var(--amarelo-hover, #ffdc3d); } .ds-url-btn:focus-visible { outline: 2px solid var(--amarelo, #ffd200); outline-offset: 2px; }"
+    },
+    {
+      "name": "Mode Switch (segmented)",
+      "kind": "nav",
+      "refersTo": "segmented-active",
+      "description": "Vídeo / Áudio / Imagens, above the link field beside the heading; active tile is top-panel navy with a yellow icon.",
+      "html": "<div class=\"ds-seg\" role=\"radiogroup\"><button class=\"on\" role=\"radio\" aria-checked=\"true\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11\"/><rect x=\"2\" y=\"6\" width=\"14\" height=\"12\" rx=\"2\"/></svg>Vídeo</button><button role=\"radio\" aria-checked=\"false\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 18V5l12-2v13\"/><circle cx=\"6\" cy=\"18\" r=\"3\"/><circle cx=\"18\" cy=\"16\" r=\"3\"/></svg>Áudio</button><button role=\"radio\" aria-checked=\"false\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/><circle cx=\"9\" cy=\"9\" r=\"2\"/><path d=\"m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21\"/></svg>Imagens</button></div>",
+      "css": ".ds-seg { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--linha, #24336f); border-radius: 10px; background: var(--campo, #0a1230); } .ds-seg button { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 20px; border: 0; border-radius: 7px; background: transparent; color: var(--muted, #a9b3d1); font: 600 14.5px 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; cursor: pointer; } .ds-seg svg { width: 19px; height: 19px; } .ds-seg button:hover { color: var(--tinta, #f2f4f8); } .ds-seg button:focus-visible { outline: 2px solid var(--amarelo, #ffd200); outline-offset: 2px; } .ds-seg button.on { background: var(--painel-3, #22336c); color: var(--tinta, #f2f4f8); } .ds-seg button.on svg { color: var(--amarelo, #ffd200); }"
+    },
+    {
+      "name": "Rail Navigation",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Chassis-navy rail; the active item is a lighter navy tile with ink text and a yellow icon.",
+      "html": "<nav class=\"ds-rail\"><button class=\"on\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><path d=\"m7 10 5 5 5-5\"/><path d=\"M12 15V3\"/></svg>Baixar</button><button><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\"/><path d=\"M3 3v5h5\"/><path d=\"M12 7v5l4 2\"/></svg>Downloads<span class=\"ds-count\">1</span></button></nav>",
+      "css": ".ds-rail { display: flex; flex-direction: column; gap: 2px; width: 220px; padding: 14px 10px; background: var(--marinho, #0c1430); } .ds-rail button { display: flex; align-items: center; gap: 12px; height: 42px; padding: 0 12px; border: 0; border-radius: 9px; background: transparent; color: var(--muted, #a9b3d1); font: 14.5px 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; text-align: left; cursor: pointer; } .ds-rail svg { width: 19px; height: 19px; } .ds-rail button:hover { background: #131f4c; color: var(--tinta, #f2f4f8); } .ds-rail button:focus-visible { outline: 2px solid var(--amarelo, #ffd200); outline-offset: 2px; } .ds-rail button.on { background: #1a2760; color: var(--tinta, #f2f4f8); font-weight: 600; } .ds-rail button.on svg { color: var(--amarelo, #ffd200); } .ds-count { margin-left: auto; min-width: 22px; padding: 0 7px; border-radius: 99px; background: var(--linha, #24336f); color: var(--tinta, #f2f4f8); font: 600 11.5px/20px 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; text-align: center; }"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip-active",
+      "description": "Small well-navy choice; active moves to top-panel navy, never yellow.",
+      "html": "<div class=\"ds-chips\"><button class=\"ds-chip on\">1080p</button><button class=\"ds-chip\">720p</button><button class=\"ds-chip\">480p</button></div>",
+      "css": ".ds-chips { display: inline-flex; gap: 6px; } .ds-chip { height: 30px; padding: 0 12px; border: 1px solid var(--linha-forte, #34468c); border-radius: 8px; background: var(--campo, #0a1230); color: var(--muted, #a9b3d1); font: 600 12.5px 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; cursor: pointer; } .ds-chip:hover { color: var(--tinta, #f2f4f8); } .ds-chip:focus-visible { outline: 2px solid var(--amarelo, #ffd200); outline-offset: 2px; } .ds-chip.on { background: var(--painel-3, #22336c); border-color: #4a5eae; color: var(--tinta, #f2f4f8); }"
+    },
+    {
+      "name": "Download Row with Plate and Livery Stripe",
+      "kind": "custom",
+      "refersTo": "row",
+      "description": "Signature: numbered plate, title and meta, yellow live numeral, raked yellow stripe on the bottom edge; delivered rows turn gold with the format on the plate.",
+      "html": "<div class=\"ds-row\"><div class=\"ds-plate\">01</div><div class=\"ds-txt\"><strong>Coding Challenge 4: Purple Rain</strong><small>The Coding Train · YouTube · MP4 360p</small></div><div class=\"ds-read\"><span class=\"ds-num\">42%</span><small>4,5 MB/s · faltam 0:02</small></div><div class=\"ds-stripe\"><i style=\"width:42%\"></i></div></div><div class=\"ds-row done\"><div class=\"ds-plate gold\">MP3</div><div class=\"ds-txt\"><strong>Coding Challenge 1: Starfield</strong><small>The Coding Train · 109k · 16,0 MB</small></div><div class=\"ds-read\"><span class=\"ds-state\">Entregue</span><small>há 6 min</small></div><div class=\"ds-stripe done\"><i></i></div></div>",
+      "css": ".ds-row { position: relative; display: flex; align-items: center; gap: 14px; min-height: 76px; margin-bottom: 8px; padding: 11px 14px 15px 12px; border: 1px solid var(--linha, #24336f); border-radius: 12px; background: var(--painel, #15224d); color: var(--tinta, #f2f4f8); overflow: hidden; font: 14px/1.45 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; } .ds-plate { display: grid; place-items: center; flex: none; width: 50px; height: 38px; border-radius: 7px; background: var(--tinta, #f2f4f8); color: var(--marinho, #0c1430); font: italic 800 22px/1 'Barlow Condensed', 'Segoe UI', sans-serif; font-variant-numeric: tabular-nums; } .ds-plate.gold { background: var(--ouro, #d9b44a); font-size: 17px; letter-spacing: 0.02em; } .ds-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; } .ds-txt strong { font-size: 14.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-txt small, .ds-read small { color: var(--muted, #a9b3d1); font-size: 12.5px; font-variant-numeric: tabular-nums; } .ds-read { min-width: 112px; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; } .ds-num { font: italic 800 30px/1 'Barlow Condensed', 'Segoe UI', sans-serif; color: var(--amarelo, #ffd200); font-variant-numeric: tabular-nums; } .ds-state { font: italic 700 20px/1 'Barlow Condensed', 'Segoe UI', sans-serif; color: var(--ouro, #d9b44a); } .ds-stripe { position: absolute; left: 0; right: 0; bottom: 0; height: 7px; background: var(--trilho-faixa, #1c2a5e); overflow: hidden; } .ds-stripe > i { position: absolute; inset: 0 auto 0 0; background: var(--amarelo, #ffd200); clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 100%, 0 100%); transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1); } .ds-stripe.done > i { width: 100%; background: var(--ouro, #d9b44a); clip-path: none; animation: ds-arrive 0.9s cubic-bezier(0.16, 1, 0.3, 1) both; } @keyframes ds-arrive { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } } .ds-row:focus-within { outline: 2px solid var(--amarelo, #ffd200); outline-offset: 2px; }"
+    },
+    {
+      "name": "Sticky Action Bar",
+      "kind": "custom",
+      "refersTo": "action-bar",
+      "description": "Keeps the yellow plate on screen at the foot of every preview, with the running total of the selection on its left.",
+      "html": "<div class=\"ds-bar\"><span class=\"ds-sum\"><b>246 de 246</b> marcados · 106 h 46 min</span><button class=\"ds-bar-sec\">Pôr na fila</button><button class=\"ds-bar-pri\">Baixar 246 áudios</button></div>",
+      "css": ".ds-bar { position: sticky; bottom: 0; display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--linha, #24336f); border-radius: 0 0 12px 12px; background: var(--painel, #15224d); box-shadow: 0 -10px 24px -14px rgb(2 5 16 / 0.6); font: 13px 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; } .ds-sum { margin-right: auto; color: var(--muted, #a9b3d1); font-variant-numeric: tabular-nums; } .ds-sum b { color: var(--tinta, #f2f4f8); font-weight: 600; } .ds-bar-sec, .ds-bar-pri { height: 46px; padding: 0 24px; border-radius: 10px; font: 600 15.5px 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; cursor: pointer; } .ds-bar-sec { border: 1px solid var(--linha-forte, #34468c); background: var(--painel-2, #1b2a5c); color: var(--tinta, #f2f4f8); } .ds-bar-sec:hover { background: var(--painel-3, #22336c); } .ds-bar-pri { border: 1px solid var(--amarelo, #ffd200); background: var(--amarelo, #ffd200); color: var(--marinho, #0c1430); font-weight: 700; } .ds-bar-pri:hover { background: var(--amarelo-hover, #ffdc3d); } .ds-bar-sec:focus-visible, .ds-bar-pri:focus-visible { outline: 2px solid var(--amarelo, #ffd200); outline-offset: 2px; }"
+    },
+    {
+      "name": "Picker Entry (already downloaded)",
+      "kind": "custom",
+      "refersTo": "row",
+      "description": "Playlist and gallery picker line: yellow checkbox, dim italic index, title struck in gold when already downloaded.",
+      "html": "<div class=\"ds-pick\"><label><input type=\"checkbox\" checked><span class=\"n\">1</span><span class=\"t done\">Coding Challenge 1: Starfield Simulation</span><span class=\"m\">já baixado</span></label><label><input type=\"checkbox\" checked><span class=\"n\">4</span><span class=\"t\">Coding Challenge 4: Purple Rain</span></label></div>",
+      "css": ".ds-pick { border: 1px solid var(--linha, #24336f); border-radius: 10px; background: var(--campo, #0a1230); font: 13.5px 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; color: var(--tinta, #f2f4f8); } .ds-pick label { display: flex; align-items: center; gap: 10px; padding: 7px 12px; border-top: 1px solid var(--linha, #24336f); cursor: pointer; } .ds-pick label:first-child { border-top: 0; } .ds-pick label:hover { background: var(--painel, #15224d); } .ds-pick input { width: 17px; height: 17px; margin: 0; accent-color: var(--amarelo, #ffd200); } .ds-pick input:focus-visible { outline: 2px solid var(--amarelo, #ffd200); outline-offset: 2px; } .ds-pick .n { width: 30px; text-align: right; color: var(--dim, #8b96c2); font: italic 700 15px/1 'Barlow Condensed', 'Segoe UI', sans-serif; } .ds-pick .t { flex: 1; } .ds-pick .t.done { text-decoration: line-through; text-decoration-color: var(--ouro, #d9b44a); color: var(--muted, #a9b3d1); } .ds-pick .m { color: var(--ouro, #d9b44a); font-size: 12px; font-weight: 600; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Pintura de Rali",
+    "overview": "The Subaru WRC livery painted onto a Windows app. A navy chassis (title bar and rail), deeper navy panels for the work, one yellow that means \"live\" or \"act now\", and a gold that means \"it arrived\". Every download is a rally car on a stage: it carries a number plate, advances as a raked yellow stripe along the bottom edge of its row, and turns gold on delivery. The rally lives in the plates, the numerals and the stripe; the copy stays in plain Brazilian Portuguese for a layperson.\n\nThe density is that of a working tool, not a landing page. The first screen is the job itself: a heading with the Vídeo / Áudio / Imagens choice, a wide link field with the yellow plate, and the rows of downloads beneath, all on one screen. Paint is flat: navy panels separated by 1px navy rules, with depth reserved for things that actually float. Dark only, by the author's decision.\n\nTwo typefaces split the work cleanly. Segoe UI Variable carries every word; Barlow Condensed ExtraBold Italic appears only where a number or a plate needs the door-number voice, which is how live percentages read at a glance from across the window.",
+    "keyCharacteristics": [
+      "Navy chassis, navy panels, navy-tinted text; no neutral greys anywhere.",
+      "Yellow is the one live and action colour; gold is delivered; red is failure.",
+      "Progress is a raked yellow livery stripe that turns gold on arrival.",
+      "Number plates mark queue position, and delivered rows carry their format (MP4, MP3, IMG) on a gold plate.",
+      "One solid yellow plate per screen, kept on screen by a sticky action bar.",
+      "Every selection shows its running total."
+    ],
+    "rules": [
+      { "name": "The One Live Colour Rule", "body": "Yellow means \"act\" or \"running now\" and nothing else. Done is never yellow; it is gold. Waiting is never yellow; it is dim navy.", "section": "colors" },
+      { "name": "The Navy Ink Rule", "body": "Text is always navy-tinted (tinta, muted, dim). No neutral grey text or surface exists in the system; every derived tone sits on the navy hue.", "section": "colors" },
+      { "name": "The Gold Means Arrived Rule", "body": "Gold is spent only on things that have reached the user: delivered rows, already-downloaded entries, the healthy-tools dot, and the \"you already have this\" notice.", "section": "colors" },
+      { "name": "The Door Number Rule", "body": "Barlow Condensed Italic is for numerals, plates and the one-word row state only. Never for headings, buttons or sentences.", "section": "typography" },
+      { "name": "The Tabular Rule", "body": "Every changing number (percent, speed, sizes, counts, times) uses tabular figures so rows do not jitter while they run.", "section": "typography" },
+      { "name": "The Same Screen Rule", "body": "Paste, choose, start and watch happen on one screen; the running and delivered rows sit directly under the field.", "section": "layout" },
+      { "name": "The Flat Paint Rule", "body": "Resting surfaces carry no shadow, no gradient and no glow. A shadow is allowed only on a layer that floats (menu, toast, dialog) or on the sticky bar's scroll edge.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep exactly one solid yellow plate (the primary button) per screen or dialog, at the end of the reading order; when a preview opens, move it into the sticky action bar.",
+      "Do show progress as the livery stripe on the row's bottom edge: yellow and raked while running, gold and full when delivered.",
+      "Do keep every delivered row's stripe gold and static; animate the gold wipe only for an arrival during the session.",
+      "Do put the file format on the delivered row's gold plate (MP4, MP3, IMG).",
+      "Do set every changing number in tabular figures, and live numbers in Barlow Condensed ExtraBold Italic.",
+      "Do derive every new surface or text tone from the navy hue; nest wells darker than their panel.",
+      "Do separate regions with 1px rule-navy lines.",
+      "Do show a running total on every selection and strike already-downloaded entries in gold.",
+      "Do keep the Vídeo / Áudio / Imagens switch visible above the link field, beside the heading.",
+      "Do respect reduced motion: replace sweeping motion with static yellow hatching."
+    ],
+    "donts": [
+      "Don't use yellow for finished or waiting states, or for the active chip or segment tile; done is gold, waiting is dim navy, the active tile is top-panel navy (only its icon turns yellow).",
+      "Don't use neutral grey for text or surfaces.",
+      "Don't set headings, buttons or sentences in Barlow Condensed.",
+      "Don't put gradients or glow on resting surfaces, or shadows on cards and rows; only floating layers and the sticky bar edge cast shadows.",
+      "Don't use a check mark on the delivered plate; it reads as a checkbox.",
+      "Don't nest a card inside a card; inline panels inside a card are plain ruled lists.",
+      "Don't leave the primary action where a long list can scroll it out of view."
+    ]
+  }
+}
