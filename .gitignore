@@ -4,6 +4,7 @@ dist/
 resources/bin/
 *.log
 *.tsbuildinfo
+dev-app-update.yml
 
 # impeccable: capturas, esboços e estado local (o PRODUCT.md, o DESIGN.md e .impeccable/surfaces entram no Git)
 .impeccable/review/

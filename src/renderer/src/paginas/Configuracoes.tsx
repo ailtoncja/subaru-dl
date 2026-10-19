@@ -136,6 +136,7 @@ export default function Configuracoes() {
   const [perfis, setPerfis] = useState<string[]>([])
   const [alvos, setAlvos] = useState<string[]>([])
   const [atualizacao, setAtualizacao] = useState('')
+  const estadoAtualizacao = useEstado((s) => s.atualizacao)
   const [confirmarReset, setConfirmarReset] = useState(false)
   const [gerandoCookies, setGerandoCookies] = useState(false)
   const [soSitesDeVideo, setSoSitesDeVideo] = useState(true)
@@ -1021,16 +1022,26 @@ export default function Configuracoes() {
         {
           texto: 'atualizar programa app versão automática',
           el: (
-            <Linha rotulo="Atualizar o Subaru DL automaticamente" dica={atualizacao || 'Baixa em segundo plano e instala ao fechar'}>
-              <button
-                className="btn pequeno"
-                onClick={async () => {
-                  setAtualizacao('Verificando…')
-                  setAtualizacao((await window.api.verificarAtualizacaoApp()).mensagem)
-                }}
-              >
-                Verificar agora
-              </button>
+            <Linha
+              rotulo="Atualizar o Subaru DL sozinho"
+              dica={estadoAtualizacao?.mensagem || atualizacao || 'Procura versões novas, baixa em segundo plano e avisa quando estiver pronta.'}
+            >
+              {estadoAtualizacao?.fase === 'pronta' ? (
+                <button className="btn pequeno" onClick={() => window.api.instalarAtualizacao()}>
+                  <RefreshCw /> Reiniciar e atualizar
+                </button>
+              ) : (
+                <button
+                  className="btn pequeno"
+                  disabled={estadoAtualizacao?.fase === 'verificando' || estadoAtualizacao?.fase === 'baixando'}
+                  onClick={async () => {
+                    setAtualizacao('Procurando versão nova…')
+                    setAtualizacao((await window.api.verificarAtualizacaoApp()).mensagem)
+                  }}
+                >
+                  Verificar agora
+                </button>
+              )}
               <Interruptor ligado={c.atualizarApp} aoMudar={(atualizarApp) => salvarConfig({ atualizarApp })} />
             </Linha>
           )

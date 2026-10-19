@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Configuracoes, Duplicado, EntradaHistorico, EntradaLog, EstadoFerramenta, ItemFila, ItemGaleria, ItemLote, OpcoesDownload } from '@shared/tipos'
+import type { Configuracoes, Duplicado, EntradaHistorico, EntradaLog, EstadoAtualizacao, EstadoFerramenta, ItemFila, ItemGaleria, ItemLote, OpcoesDownload } from '@shared/tipos'
 
 /** Abas do painel Ajustes: preferências, ferramentas embutidas e o registro */
 export type AbaAjustes = 'preferencias' | 'ferramentas' | 'registro'
@@ -34,6 +34,8 @@ interface Estado {
   config: Configuracoes | null
   logs: EntradaLog[]
   ferramentas: EstadoFerramenta[]
+  /** Versão nova do programa: procurando, baixando ou pronta para instalar */
+  atualizacao: EstadoAtualizacao | null
   /** Link copiado no navegador, oferecido logo abaixo do campo */
   linkCopiado: string | null
   /** Link que o campo deve abrir (Ctrl+V fora de um campo de texto) */
@@ -55,6 +57,7 @@ export const useEstado = create<Estado>((set) => ({
   config: null,
   logs: [],
   ferramentas: [],
+  atualizacao: null,
   linkCopiado: null,
   linkParaAbrir: null,
   duplicados: null,
@@ -133,4 +136,6 @@ export async function iniciarEstado(): Promise<void> {
   api.aoDuplicados((urls, duplicados, iniciar) => useEstado.setState({ duplicados: { urls, duplicados, iniciar, adicionados: 0 } }))
 
   void api.ferramentas().then((ferramentas) => useEstado.setState({ ferramentas }))
+  api.aoMudarAtualizacao((atualizacao) => useEstado.setState({ atualizacao }))
+  void api.estadoAtualizacao().then((atualizacao) => useEstado.setState({ atualizacao }))
 }

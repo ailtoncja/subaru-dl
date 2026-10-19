@@ -1,9 +1,11 @@
 import type {
   ArquivoGaleria,
+  CelularEncontrado,
   Configuracoes,
   Duplicado,
   EntradaHistorico,
   EntradaLog,
+  EstadoAtualizacao,
   EstadoFerramenta,
   InfoMidia,
   ItemFila,
@@ -12,7 +14,6 @@ import type {
   NomeFerramenta,
   OpcoesDownload,
   OrganizarGaleria,
-  CelularEncontrado,
   ResultadoCookies,
   ResultadoEnvioCelular,
   Segredos
@@ -104,6 +105,9 @@ export interface ApiSubaru {
   // App
   versaoApp(): Promise<string>
   verificarAtualizacaoApp(): Promise<{ disponivel: boolean; versao?: string; mensagem: string }>
+  estadoAtualizacao(): Promise<EstadoAtualizacao>
+  /** Fecha, instala a versão já baixada e abre o programa de novo */
+  instalarAtualizacao(): Promise<void>
 
   // Eventos do motor
   aoMudarFila(cb: (fila: ItemFila[]) => void): () => void
@@ -114,6 +118,7 @@ export interface ApiSubaru {
   aoLinkCopiado(cb: (url: string) => void): () => void
   aoDuplicados(cb: (urls: string[], duplicados: Duplicado[], iniciar: boolean) => void): () => void
   aoMaximizar(cb: (maximizada: boolean) => void): () => void
+  aoMudarAtualizacao(cb: (estado: EstadoAtualizacao) => void): () => void
 }
 
 /** Canais IPC: nome do método → canal. Eventos usam o prefixo "evt:". */
@@ -175,7 +180,9 @@ export const CANAIS_INVOKE = [
   'limparLogs',
   'exportarLogs',
   'versaoApp',
-  'verificarAtualizacaoApp'
+  'verificarAtualizacaoApp',
+  'estadoAtualizacao',
+  'instalarAtualizacao'
 ] as const satisfies readonly (keyof ApiSubaru)[]
 
 export const EVENTOS = {
@@ -186,5 +193,6 @@ export const EVENTOS = {
   aoMudarFerramentas: 'evt:ferramentas',
   aoLinkCopiado: 'evt:link-copiado',
   aoDuplicados: 'evt:duplicados',
-  aoMaximizar: 'evt:maximizar'
+  aoMaximizar: 'evt:maximizar',
+  aoMudarAtualizacao: 'evt:atualizacao'
 } as const satisfies Partial<Record<keyof ApiSubaru, string>>
