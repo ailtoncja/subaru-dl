@@ -17,6 +17,7 @@ import {
   X
 } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState, type DragEvent, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { bytes, duracao, faixasParaEscolher, numeroCurto, tempoRelativo, tempoTotal } from '@shared/formatar'
 import { estimarTamanho, FORMATOS_AUDIO, BITRATES, QUALIDADES } from '@shared/formatos'
 import type { Duplicado, InfoMidia, ItemLote, OpcoesDownload } from '@shared/tipos'
@@ -26,7 +27,7 @@ import { CampoPasta, SelecaoOrganizar } from '../componentes/Destino'
 import OpcoesAvancadas, { expandir, ListaPlaylist, somaPlaylist } from '../componentes/OpcoesAvancadas'
 import { adicionarLote, avisar, extrairLinks, useEstado } from '../estado'
 import { juntarLinks, ListaLinks, type LinhaLink } from '../componentes/ListaLinks'
-import { Faixa } from './ItemFila'
+import { BarraTempo } from '../componentes/Placar'
 
 const SUFIXO: Record<string, string> = { '4320': '8K', '2160': '4K UHD', '1440': '2K QHD', '1080': 'Full HD', '720': 'HD', '480': 'SD', '360': '' }
 
@@ -53,12 +54,15 @@ function ComPontos({ partes }: { partes: Array<ReactNode | null | false | undefi
 }
 
 export default function FluxoVideo({
+  slot,
   modo,
   texto,
   setTexto,
   pedido,
   aoTentarImagens
 }: {
+  /** Onde o campo do link é desenhado (no alto da tela, ao lado de Vídeo / Áudio / Imagens) */
+  slot: HTMLElement | null
   modo: 'video' | 'audio'
   texto: string
   setTexto: (t: string) => void
@@ -156,7 +160,7 @@ export default function FluxoVideo({
     const pl = previa.info.playlist
     if (pl && opcoes.itensPlaylist.trim() === '0') return avisar('Marque pelo menos um vídeo da playlist', 'erro')
     await window.api.adicionarComInfo(previa.url, previa.info, opcoes, iniciar)
-    avisar(iniciar ? 'Baixando — acompanhe logo abaixo' : 'Na fila. Mande baixar em Downloads quando quiser.')
+    avisar(iniciar ? 'Baixando — acompanhe no placar ao vivo' : 'Na fila. Mande baixar pela aba "Na fila" quando quiser.')
     setPrevia(null)
     setTexto('')
   }
@@ -201,7 +205,10 @@ export default function FluxoVideo({
       onDragLeave={(e) => e.currentTarget === e.target && setArrastando(false)}
       onDrop={soltar}
     >
+      {slot &&
+        createPortal(
       <div className={`caixa-url${arrastando ? ' arrastando' : ''}`}>
+        <div className="campo-link" title="Shift+Enter junta vários links, um por linha">
         <Link2 />
         <CampoLinks
           valor={texto}
@@ -217,7 +224,7 @@ export default function FluxoVideo({
               void ler(colado)
             }
           }}
-          placeholder={modo === 'audio' ? 'Cole o link da música, do vídeo ou da playlist' : 'Cole o link do vídeo ou da playlist'}
+          placeholder={modo === 'audio' ? 'Cole aqui o link da música, do vídeo ou da playlist' : 'Cole aqui o link do vídeo ou da playlist'}
         />
         {texto && !carregando && (
           <button className="icone-btn leve" title="Limpar" onClick={() => (setTexto(''), setPrevia(null), setErro(''))}>
@@ -227,11 +234,11 @@ export default function FluxoVideo({
         <button className="icone-btn leve" title="Importar uma lista de links (.txt)" onClick={importar}>
           <FileText />
         </button>
+        </div>
         {principal}
-      </div>
-      <p className="dica-campo">
-        YouTube, TikTok, Instagram, X, Twitch, SoundCloud e mais de 1.800 sites. <b>Ctrl+V</b> cola de qualquer lugar; <b>Shift+Enter</b> junta vários links.
-      </p>
+      </div>,
+          slot
+        )}
 
       {linkCopiado && !previa && !carregando && (
         <div className="aviso-azul">
@@ -252,7 +259,7 @@ export default function FluxoVideo({
         <div className="cartao lendo" role="status">
           <strong>Lendo o link…</strong>
           <span className="mono">{texto}</span>
-          <Faixa estado="correndo" />
+          <BarraTempo correndo rotulo="Lendo o link" />
         </div>
       )}
 
@@ -357,7 +364,7 @@ function CartaoPrevia({
           </div>
         )}
         {info.duracao != null && !info.aoVivo && <span className="duracao">{duracao(info.duracao)}</span>}
-        {info.aoVivo && <span className="ao-vivo">AO VIVO</span>}
+        {info.aoVivo && <span className="ao-vivo">Transmissão ao vivo</span>}
       </div>
 
       <div className="cabeca-previa">
@@ -379,7 +386,7 @@ function CartaoPrevia({
         </div>
 
         {duplicado && (
-          <div className="aviso-amarelo">
+          <div className="aviso-azul ja-baixado">
             <History />
             <span>
               Você já baixou isso {tempoRelativo(duplicado.baixadoEm)}
@@ -389,7 +396,7 @@ function CartaoPrevia({
         )}
 
         {pl && pl.total === 0 && (
-          <div className="aviso-amarelo">
+          <div className="aviso-azul">
             <AlertTriangle />
             <span>Essa playlist está vazia ou é privada. Se for sua, entre na conta em Ajustes → Rede e login.</span>
           </div>
@@ -478,7 +485,7 @@ function CartaoPrevia({
       {/* Presa no pé da tela enquanto o cartão está à vista: o botão de baixar nunca some */}
       <div className="barra-acoes">
         {pl && pl.total > 0 && <SomaPlaylist info={info} o={o} />}
-        <button className="btn grande" disabled={!!pl && !selecionados} onClick={() => baixar(false)} title="Fica esperando até você mandar baixar na tela Downloads">
+        <button className="btn grande" disabled={!!pl && !selecionados} onClick={() => baixar(false)} title="Fica esperando na aba Na fila até você mandar baixar">
           <ListPlus /> Pôr na fila
         </button>
         <button className="btn primario grande" disabled={!!pl && !selecionados} onClick={() => baixar(true)}>
@@ -499,7 +506,14 @@ function SomaPlaylist({ info, o }: { info: InfoMidia; o: OpcoesDownload }) {
       </b>
       <span className="so-largo"> marcados</span>
       {s.segundos > 0 && ` · ${tempoTotal(s.segundos)}`}
-      {s.tamanho ? ` · ~${bytes(s.tamanho)}` : ''}
+      {s.tamanho ? (
+        <span title={o.modo === 'audio' ? 'Estimativa pela qualidade do áudio' : 'Estimativa pela qualidade escolhida (em "A melhor", conta como 1080p); o tamanho real muda de vídeo para vídeo'}>
+          {' · ~'}
+          {bytes(s.tamanho)}
+        </span>
+      ) : (
+        ''
+      )}
     </span>
   )
 }
@@ -558,7 +572,7 @@ function CartaoLote({
       opcoes: { ...o, pasta: l.pasta ?? o.pasta, itensPlaylist: l.itensPlaylist }
     }))
     const n = await adicionarLote(lote, iniciar)
-    if (n) avisar(iniciar ? `${n} ${n === 1 ? 'link baixando' : 'links baixando'} — acompanhe logo abaixo` : `${n} ${n === 1 ? 'link' : 'links'} na fila`)
+    if (n) avisar(iniciar ? `${n} ${n === 1 ? 'link baixando' : 'links baixando'} — acompanhe no placar ao vivo` : `${n} ${n === 1 ? 'link' : 'links'} na fila`)
     fechar()
   }
 

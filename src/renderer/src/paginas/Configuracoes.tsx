@@ -283,7 +283,7 @@ export default function Configuracoes() {
         {
           texto: 'organizar subpastas playlist canal ano mês artista álbum',
           el: (
-            <Linha rotulo="Organizar em subpastas (padrão)" dica="Dá para mudar em cada download, na tela Baixar" coluna={c.padrao.subpasta === 'personalizado'}>
+            <Linha rotulo="Organizar em subpastas (padrão)" dica="Dá para mudar em cada download, na prévia do link" coluna={c.padrao.subpasta === 'personalizado'}>
               <SelecaoOrganizar o={c.padrao} mudar={mudarPadrao} />
             </Linha>
           )
@@ -918,7 +918,7 @@ export default function Configuracoes() {
         {
           texto: 'galeria organizar subpastas site perfil mesma pasta',
           el: (
-            <Linha rotulo="Organizar a galeria (padrão)" dica="Dá para mudar a cada download, no modo Imagens da tela Baixar">
+            <Linha rotulo="Organizar a galeria (padrão)" dica="Dá para mudar a cada download, no modo Imagens, logo abaixo do campo">
               <SelecaoOrganizarGaleria
                 valor={c.galeriaOrganizar}
                 formato={c.galeriaFormatoPasta}

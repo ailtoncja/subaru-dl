@@ -1,6 +1,7 @@
 // Baixar imagens: perfis, posts, álbuns e mangás com o gallery-dl (item 74).
 import { CheckSquare, ClipboardPaste, Download, Eye, FileText, Images, Info, Link2, Loader2, Square, Video, X } from 'lucide-react'
 import { memo, useCallback, useEffect, useRef, useState, type DragEvent, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { urlMiniaturaRemota } from '@shared/miniatura'
 import type { ArquivoGaleria, OrganizarGaleria } from '@shared/tipos'
 import { CampoLinks } from '../componentes/CampoLinks'
@@ -45,10 +46,13 @@ function intervaloDe(l: Listagem): string | null {
 }
 
 export default function FluxoImagens({
+  slot,
   texto,
   setTexto,
   pedido
 }: {
+  /** Onde o campo do link é desenhado (no alto da tela, ao lado de Vídeo / Áudio / Imagens) */
+  slot: HTMLElement | null
   texto: string
   setTexto: (t: string) => void
   pedido: { url: string; n: number } | null
@@ -145,7 +149,7 @@ export default function FluxoImagens({
     if (n) {
       setTexto('')
       setPrevia(null)
-      avisar('Baixando — acompanhe logo abaixo')
+      avisar('Baixando — acompanhe no placar ao vivo')
     }
   }
 
@@ -172,7 +176,7 @@ export default function FluxoImagens({
     let n = 0
     for (const l of linhas) n += await window.api.adicionarGaleria([l.url], l.pasta ?? pasta, organizar, intervaloDe(l), formatoPasta)
     setLinhas(null)
-    avisar(`${n} ${n === 1 ? 'link baixando' : 'links baixando'} — acompanhe logo abaixo`)
+    avisar(`${n} ${n === 1 ? 'link baixando' : 'links baixando'} — acompanhe no placar ao vivo`)
   }
 
   const previaAberta = !!previa && (previa.arquivos.length > 0 || previa.carregando)
@@ -213,7 +217,10 @@ export default function FluxoImagens({
       onDragLeave={(e) => e.currentTarget === e.target && setArrastando(false)}
       onDrop={soltar}
     >
+      {slot &&
+        createPortal(
       <div className={`caixa-url${arrastando ? ' arrastando' : ''}`}>
+        <div className="campo-link" title="Shift+Enter junta vários links, um por linha">
         <Link2 />
         <CampoLinks
           valor={texto}
@@ -232,7 +239,7 @@ export default function FluxoImagens({
               void verArquivos(false, colados[0])
             }
           }}
-          placeholder="Cole o link de um perfil, post ou álbum"
+          placeholder="Cole aqui o link de um perfil, post ou álbum"
         />
         {texto && (
           <button className="icone-btn leve" title="Limpar" onClick={() => (setTexto(''), setPrevia(null))}>
@@ -242,8 +249,11 @@ export default function FluxoImagens({
         <button className="icone-btn leve" title="Importar uma lista de links (.txt)" onClick={importar}>
           <FileText />
         </button>
+        </div>
         {botoes}
-      </div>
+      </div>,
+          slot
+        )}
 
       <div className="rodape-previa">
         <span className="destino" title={destino}>

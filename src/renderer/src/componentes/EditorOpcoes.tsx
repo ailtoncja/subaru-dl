@@ -47,7 +47,7 @@ const OPCOES_CODEC_AUDIO = [
   { valor: 'opus' as const, nome: 'Opus' }
 ]
 
-/** semTipo: na tela Baixar o tipo (vídeo ou áudio) já é escolhido no alto, então não repete aqui. */
+/** semTipo: na prévia o tipo (vídeo ou áudio) já é escolhido no alto da tela, então não repete aqui. */
 export function EditorQualidade({ o, mudar, info, semTipo }: { o: OpcoesDownload; mudar: Mudar; info?: InfoMidia | null; semTipo?: boolean }) {
   // Com a informação do vídeo, mostra só as qualidades que existem de verdade
   const alturas = new Set(info?.formatos.map((f) => f.altura ?? 0))

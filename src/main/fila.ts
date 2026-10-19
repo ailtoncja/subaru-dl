@@ -168,7 +168,7 @@ export function adicionar(
   return { adicionados: novos.length, duplicados }
 }
 
-/** Adiciona um link cuja informação já foi lida (prévia da tela Baixar): não precisa ler de novo. */
+/** Adiciona um link cuja informação já foi lida (prévia do link): não precisa ler de novo. */
 export function adicionarComInfo(url: string, info: InfoMidia, opcoes: Partial<OpcoesDownload>, iniciar: boolean): void {
   const novo = { ...novoItem(url, opcoes), info, status: 'pronto' as const }
   itens.push(novo)

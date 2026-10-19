@@ -87,7 +87,7 @@ export default function Logs() {
         </div>
 
         {dicas.map((d) => (
-          <div className="aviso-amarelo" key={d}>
+          <div className="aviso-azul" key={d}>
             <AlertTriangle />
             <span>{d}</span>
           </div>

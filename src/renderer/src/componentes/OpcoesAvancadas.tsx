@@ -1,9 +1,9 @@
-// "Opções avançadas" de um download: dentro da prévia da tela Baixar (embutidas) e numa janela nos itens da fila.
+// "Opções avançadas" de um download: dentro da prévia (embutidas) e numa janela nos itens da fila.
 import { Film, Info, LayoutGrid, List, Split } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useEstado } from '../estado'
 import { bytes, dataUpload, duracao, lerTempo, numero, tempoTotal } from '@shared/formatar'
-import { codecCurto, escolherFormatos, temAudio, temVideo } from '@shared/formatos'
+import { codecCurto, escolherFormatos, temAudio, temVideo, estimarPorDuracao } from '@shared/formatos'
 import { urlMiniaturaRemota } from '@shared/miniatura'
 import type { EntradaPlaylist, InfoMidia, OpcoesDownload } from '@shared/tipos'
 import { EditorLegendas, EditorPosProcesso, EditorQualidade } from './EditorOpcoes'
@@ -303,11 +303,11 @@ export function somaPlaylist(info: InfoMidia, o: OpcoesDownload): { marcados: nu
   const pl = info.playlist!
   const selecao = expandir(o.itensPlaylist, pl.total)
   const segundos = pl.entradas.reduce((t, e) => t + (selecao.has(e.indice) ? (e.duracao ?? 0) : 0), 0)
-  const tamanho = o.modo === 'audio' && o.bitrateAudio > 0 && segundos ? (o.bitrateAudio * 1000 * segundos) / 8 : null
+  const tamanho = estimarPorDuracao(segundos, o)
   return { marcados: selecao.size, total: pl.total, segundos, tamanho }
 }
 
-/** Lista para marcar os vídeos da playlist, em lista ou em grade de capas (também usada na prévia da tela Baixar). */
+/** Lista para marcar os vídeos da playlist, em lista ou em grade de capas (também usada na prévia do link). */
 /** semSoma: a prévia já mostra o total na barra de ações presa no pé da tela. */
 export function ListaPlaylist({ info, o, mudar, semSoma }: { info: InfoMidia; o: OpcoesDownload; mudar: Mudar; semSoma?: boolean }) {
   const pl = info.playlist!
@@ -340,7 +340,7 @@ export function ListaPlaylist({ info, o, mudar, semSoma }: { info: InfoMidia; o:
   }
   // Total corrido da seleção: tempo somado e, no áudio, o tamanho aproximado pela taxa de bits
   const segundos = pl.entradas.reduce((t, e) => t + (selecao.has(e.indice) ? (e.duracao ?? 0) : 0), 0)
-  const tamanho = o.modo === 'audio' && o.bitrateAudio > 0 && segundos ? (o.bitrateAudio * 1000 * segundos) / 8 : null
+  const tamanho = estimarPorDuracao(segundos, o)
   const repetidos = pl.entradas.filter((e) => selecao.has(e.indice) && jaBaixado(e)).length
 
   return (

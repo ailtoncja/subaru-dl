@@ -1,9 +1,10 @@
 import { create } from 'zustand'
 import type { Configuracoes, Duplicado, EntradaHistorico, EntradaLog, EstadoFerramenta, ItemFila, ItemGaleria, ItemLote, OpcoesDownload } from '@shared/tipos'
 
-export type Pagina = 'baixar' | 'downloads' | 'ajustes'
-/** Abas de Ajustes: preferências, ferramentas embutidas (antigas Dependências) e o registro (antigos Logs) */
+/** Abas do painel Ajustes: preferências, ferramentas embutidas e o registro */
 export type AbaAjustes = 'preferencias' | 'ferramentas' | 'registro'
+/** Abas da tabela de downloads */
+export type AbaTabela = 'todos' | 'vivo' | 'fila' | 'concluidos' | 'falhas'
 
 export interface Toast {
   id: number
@@ -23,27 +24,31 @@ interface PedidoDuplicados {
 }
 
 interface Estado {
-  pagina: Pagina
+  /** O painel Ajustes desliza por cima da tabela; o campo e o placar continuam à vista */
+  ajustesAberto: boolean
   abaAjustes: AbaAjustes
+  abaTabela: AbaTabela
   fila: ItemFila[]
   historico: EntradaHistorico[]
   galeria: ItemGaleria[]
   config: Configuracoes | null
   logs: EntradaLog[]
   ferramentas: EstadoFerramenta[]
-  /** Link copiado no navegador, oferecido na tela Baixar */
+  /** Link copiado no navegador, oferecido logo abaixo do campo */
   linkCopiado: string | null
-  /** Link que a tela Baixar deve abrir (Ctrl+V em qualquer tela) */
+  /** Link que o campo deve abrir (Ctrl+V fora de um campo de texto) */
   linkParaAbrir: string | null
   duplicados: PedidoDuplicados | null
   toasts: Toast[]
-  ir: (p: Pagina) => void
   irAjustes: (aba: AbaAjustes) => void
+  fecharAjustes: () => void
+  verAba: (aba: AbaTabela) => void
 }
 
 export const useEstado = create<Estado>((set) => ({
-  pagina: 'baixar',
+  ajustesAberto: false,
   abaAjustes: 'preferencias',
+  abaTabela: 'todos',
   fila: [],
   historico: [],
   galeria: [],
@@ -54,12 +59,11 @@ export const useEstado = create<Estado>((set) => ({
   linkParaAbrir: null,
   duplicados: null,
   toasts: [],
-  ir: (pagina) => set({ pagina }),
-  irAjustes: (abaAjustes) => set({ pagina: 'ajustes', abaAjustes })
+  irAjustes: (abaAjustes) => set({ ajustesAberto: true, abaAjustes }),
+  fecharAjustes: () => set({ ajustesAberto: false }),
+  verAba: (abaTabela) => set({ abaTabela, ajustesAberto: false })
 }))
 
-/** Quando o programa abriu: o que chegou depois disso aparece como "entregue agora" na tela Baixar. */
-export const INICIO_SESSAO = Date.now()
 
 let proximoToast = 1
 export function avisar(texto: string, tipo: Toast['tipo'] = 'info'): void {
@@ -96,9 +100,9 @@ export async function adicionarLote(lote: ItemLote[], iniciar: boolean): Promise
   return r.adicionados
 }
 
-/** Abre um link na tela Baixar (prévia). */
+/** Abre um link no campo (prévia) e tira o painel Ajustes da frente. */
 export function abrirNoInicio(url: string): void {
-  useEstado.setState({ linkParaAbrir: url, linkCopiado: null, pagina: 'baixar' })
+  useEstado.setState({ linkParaAbrir: url, linkCopiado: null, ajustesAberto: false })
 }
 
 export const extrairLinks = (texto: string): string[] => texto.match(/https?:\/\/[^\s"'<>]+/gi) ?? []
