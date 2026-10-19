@@ -161,6 +161,12 @@ svg { flex: none; }
 .btn-titulo:hover { background: var(--painel-2); border-color: var(--linha-forte); }
 .btn-titulo.ativo { background: var(--painel-3); border-color: var(--linha-forte); }
 .btn-titulo.ativo svg { color: var(--amarelo); }
+/* Versão nova baixada: o ponto dourado diz "chegou"; o clique reinicia e instala */
+.btn-titulo.nova-versao { gap: 8px; border-color: var(--ouro-borda); }
+.btn-titulo.nova-versao:hover { border-color: var(--ouro); }
+.btn-titulo .acao-titulo { display: inline-flex; align-items: center; gap: 5px; margin-left: 2px; padding-left: 9px; border-left: 1px solid var(--linha); color: var(--tinta); }
+.btn-titulo .acao-titulo svg { width: 13px; height: 13px; color: var(--tinta); }
+.ponto.ouro { background: var(--ouro); }
 
 .controles-janela { display: flex; height: 100%; margin-left: 6px; }
 .controles-janela button { width: 46px; height: 100%; border: 0; background: transparent; color: var(--muted); cursor: pointer; display: grid; place-items: center; }

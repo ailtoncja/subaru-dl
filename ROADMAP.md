@@ -95,7 +95,8 @@ Legenda: `[ ]` a fazer · `[x]` pronto
 ### P. Sistema e app
 - [x] 83. Ícone na bandeja, minimizar para a bandeja ao fechar
 - [x] 84. Iniciar com o Windows (minimizado)
-- [x] 86. Atualização automática do app (falta só criar o repositório no GitHub para publicar as versões)
+- [x] 86. Atualização automática do app: procura as versões publicadas no GitHub, baixa em segundo plano e avisa
+  "Versão X pronta · Reiniciar" na barra de título (desde a 0.8.0)
 - [x] 87. Atualizar yt-dlp / Deno / ffmpeg / gallery-dl / aria2 (estável ou nightly)
 - [x] 88. Tela de dependências
 - [x] 89. Logs com filtros, exportação e dicas automáticas de erro

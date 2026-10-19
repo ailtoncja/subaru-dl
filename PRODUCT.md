@@ -79,8 +79,8 @@ Restrições:
   CLI, notificações, temas, vários idiomas, aviso de uso.
 - Dados do usuário em `%APPDATA%\Subaru DL`; o desenvolvimento usa `%APPDATA%\Subaru DL (dev)`.
 
-Em aberto: a publicação pública. O repositório no GitHub ainda é privado, e a atualização automática do app só
-funciona depois de publicar as versões.
+Publicação: o repositório `ailtoncja/subaru-dl` é público desde a 0.8.0, e as versões saem em Releases. O
+programa instalado procura essas versões, baixa em segundo plano e avisa quando a nova estiver pronta.
 
 ## Brand Commitments
 

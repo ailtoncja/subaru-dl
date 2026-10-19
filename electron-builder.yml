@@ -15,6 +15,12 @@ extraResources:
     to: icone.png
   - from: resources/icone-bandeja.png
     to: icone-bandeja.png
+# As versões publicadas no GitHub alimentam a atualização automática (electron-updater)
+publish:
+  provider: github
+  owner: ailtoncja
+  repo: subaru-dl
+  releaseType: release
 win:
   target: nsis
   icon: build/icon.ico

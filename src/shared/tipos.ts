@@ -389,6 +389,17 @@ export interface EntradaLog {
 
 export type NomeFerramenta = 'yt-dlp' | 'deno' | 'ffmpeg' | 'gallery-dl' | 'aria2'
 
+/** Atualização do próprio programa (versões publicadas no GitHub). */
+export interface EstadoAtualizacao {
+  fase: 'parado' | 'verificando' | 'baixando' | 'pronta' | 'em-dia' | 'erro'
+  /** Versão nova encontrada (ou já baixada) */
+  versao: string | null
+  /** Quanto da versão nova já baixou (0–100) */
+  pct: number
+  /** Frase para mostrar nos Ajustes */
+  mensagem: string
+}
+
 export interface EstadoFerramenta {
   nome: NomeFerramenta
   descricao: string

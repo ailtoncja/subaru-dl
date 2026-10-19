@@ -1,10 +1,10 @@
 import { app, BrowserWindow, clipboard, dialog, ipcMain, protocol, shell } from 'electron'
-import { autoUpdater } from 'electron-updater'
 import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { ApiSubaru } from '@shared/api'
 import { EVENTOS } from '@shared/api'
 import { ESQUEMA_MINIATURA } from '@shared/miniatura'
+import * as atualizador from './atualizador'
 import * as cfg from './configuracoes'
 import { enviarCookiesAoCelular, procurarCelulares } from './celular'
 import { acharCookiesBaixado, arquivoCookies, exportarCookies, importarCookies } from './cookies'
@@ -205,7 +205,9 @@ const handlers: Handlers = {
   },
 
   versaoApp: async () => app.getVersion(),
-  verificarAtualizacaoApp: async () => verificarAtualizacaoApp()
+  verificarAtualizacaoApp: async () => atualizador.verificarAgora(),
+  estadoAtualizacao: async () => atualizador.estadoAtualizacao(),
+  instalarAtualizacao: async () => atualizador.instalarAgora()
 }
 
 function registrarIpc() {
@@ -238,25 +240,6 @@ function perfisDoNavegador(navegador: string): string[] {
     return Object.keys(dados?.profile?.info_cache ?? {})
   } catch {
     return []
-  }
-}
-
-// ---------- Atualização do app (item 86) ----------
-
-async function verificarAtualizacaoApp(): Promise<{ disponivel: boolean; versao?: string; mensagem: string }> {
-  if (!app.isPackaged) return { disponivel: false, mensagem: 'A atualização automática só funciona no programa instalado.' }
-  if (!existsSync(join(process.resourcesPath, 'app-update.yml'))) {
-    return { disponivel: false, mensagem: 'Ainda não há um repositório configurado para publicar as atualizações.' }
-  }
-  try {
-    const r = await autoUpdater.checkForUpdates()
-    const versao = r?.updateInfo.version
-    if (versao && versao !== app.getVersion()) {
-      return { disponivel: true, versao, mensagem: `Versão ${versao} disponível. Ela será instalada ao fechar o programa.` }
-    }
-    return { disponivel: false, mensagem: 'Você já está na versão mais recente.' }
-  } catch (e) {
-    return { disponivel: false, mensagem: `Não foi possível verificar: ${e instanceof Error ? e.message : e}` }
   }
 }
 
@@ -311,15 +294,13 @@ app.whenReady().then(() => {
   criarJanela()
   aplicarConfiguracoesDeSistema()
 
-  // Ferramentas e app se atualizam em segundo plano depois que a janela abriu
-  setTimeout(() => {
-    void ferramentas.verificarVersoes().then(() => ferramentas.atualizacaoAutomatica())
-    if (cfg.configuracoes().atualizarApp && app.isPackaged) {
-      // Baixa em silêncio e instala ao fechar o programa (sem notificações)
-      autoUpdater.autoDownload = true
-      autoUpdater.checkForUpdates().catch(() => {})
-    }
-  }, 3000)
+  // Ferramentas se atualizam em segundo plano depois que a janela abriu
+  setTimeout(() => void ferramentas.verificarVersoes().then(() => ferramentas.atualizacaoAutomatica()), 3000)
+  // O programa procura versões novas sozinho, baixa e avisa na barra de título quando estiver pronta
+  atualizador.prepararAtualizador(
+    () => cfg.configuracoes().atualizarApp,
+    (e) => enviar(EVENTOS.aoMudarAtualizacao, e)
+  )
 })
 
 app.on('before-quit', () => {

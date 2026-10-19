@@ -8,7 +8,10 @@ O que já está feito e o que vem depois está no [ROADMAP.md](ROADMAP.md).
 
 ## Instalar
 
-Rode `dist\Subaru-DL-Setup-<versão>.exe`.
+Baixe o `Subaru-DL-Setup-<versão>.exe` mais novo na página de
+[versões (Releases)](https://github.com/ailtoncja/subaru-dl/releases/latest) e rode.
+Depois disso o programa se atualiza sozinho: procura versões novas ao abrir e a cada 6 horas, baixa em segundo
+plano e mostra "Versão X pronta · Reiniciar" na barra de título (ou instala quando você sai do programa).
 
 Como o instalador não tem certificado de assinatura, na primeira vez o Windows mostra
 "O Windows protegeu o computador": clique em **Mais informações → Executar assim mesmo**.
@@ -30,7 +33,8 @@ Outros comandos:
 | Comando | O que faz |
 |---|---|
 | `npm run typecheck` | Confere os tipos do TypeScript |
-| `npm run instalador` | Gera `dist\Subaru-DL-Setup-<versão>.exe` |
+| `npm run instalador` | Gera `dist\Subaru-DL-Setup-<versão>.exe` (sem publicar) |
+| `npm run publicar` | Gera e publica a versão no GitHub, que alimenta a atualização automática (precisa de `GH_TOKEN`) |
 | `npm run binarios -- --forcar` | Baixa de novo todas as ferramentas |
 | `powershell -File scripts\gerar-icone.ps1` | Recria o ícone (`build\icon.ico` e `resources\icone*.png`) |
 
@@ -54,14 +58,18 @@ src/shared/     tipos, formatação e regras usadas pelos dois lados
 
 ## Atualização automática do programa
 
-O código já está pronto (electron-updater). Para ativar, crie um repositório no GitHub,
-adicione ao `electron-builder.yml`:
+O programa usa o electron-updater e procura as versões publicadas neste repositório
+(`publish` no `electron-builder.yml`; o código fica em `src/main/atualizador.ts`).
 
-```yaml
-publish:
-  provider: github
-  owner: <seu-usuario>
-  repo: subaru-dl
-```
+Para lançar uma versão nova:
 
-e publique cada versão nova com `npx electron-builder --win --publish always` (precisa da variável `GH_TOKEN`).
+1. Suba a versão no `package.json` (ex.: `0.8.1`) e faça o commit.
+2. Rode `npm run publicar` com a variável `GH_TOKEN` (um token do GitHub com acesso a repositórios;
+   com o GitHub CLI: `GH_TOKEN=$(gh auth token) npm run publicar`).
+
+Isso cria a versão `v<versão>` em Releases com o instalador, o `.blockmap` e o `latest.yml`. Quem tem o programa
+instalado recebe a versão nova sozinho.
+
+Para testar em desenvolvimento sem mexer no programa instalado: crie um `dev-app-update.yml` na raiz do projeto com
+`provider: github`, `owner: ailtoncja` e `repo: subaru-dl`, baixe a versão do `package.json` para uma menor que a
+publicada e abra com `SUBARU_TESTAR_ATUALIZACAO=1 npx electron-vite dev`.
