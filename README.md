@@ -34,7 +34,7 @@ Outros comandos:
 |---|---|
 | `npm run typecheck` | Confere os tipos do TypeScript |
 | `npm run instalador` | Gera `dist\Subaru-DL-Setup-<versão>.exe` (sem publicar) |
-| `npm run publicar` | Gera e publica a versão no GitHub, que alimenta a atualização automática (precisa de `GH_TOKEN`) |
+| `npm run publicar` | Gera e publica a versão no GitHub, que alimenta a atualização automática (`scripts/publicar.mjs`) |
 | `npm run binarios -- --forcar` | Baixa de novo todas as ferramentas |
 | `powershell -File scripts\gerar-icone.ps1` | Recria o ícone (`build\icon.ico` e `resources\icone*.png`) |
 
@@ -64,11 +64,10 @@ O programa usa o electron-updater e procura as versões publicadas neste reposit
 Para lançar uma versão nova:
 
 1. Suba a versão no `package.json` (ex.: `0.8.1`) e faça o commit.
-2. Rode `npm run publicar` com a variável `GH_TOKEN` (um token do GitHub com acesso a repositórios;
-   com o GitHub CLI: `GH_TOKEN=$(gh auth token) npm run publicar`).
+2. Rode `npm run publicar` (precisa do GitHub CLI logado, ou da variável `GH_TOKEN`).
 
-Isso cria a versão `v<versão>` em Releases com o instalador, o `.blockmap` e o `latest.yml`. Quem tem o programa
-instalado recebe a versão nova sozinho.
+Isso sobe o instalador, o `.blockmap` e o `latest.yml` como rascunho da versão `v<versão>` em Releases e, quando os
+três chegaram, publica. Quem tem o programa instalado recebe a versão nova sozinho.
 
 Para testar em desenvolvimento sem mexer no programa instalado: crie um `dev-app-update.yml` na raiz do projeto com
 `provider: github`, `owner: ailtoncja` e `repo: subaru-dl`, baixe a versão do `package.json` para uma menor que a

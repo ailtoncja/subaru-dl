@@ -13,7 +13,7 @@
     "build": "electron-vite build",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "instalador": "npm run binarios && electron-vite build && electron-builder --win --publish never",
-    "publicar": "npm run binarios && electron-vite build && electron-builder --win --publish always"
+    "publicar": "node scripts/publicar.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",

@@ -20,7 +20,8 @@ publish:
   provider: github
   owner: ailtoncja
   repo: subaru-dl
-  releaseType: release
+  # Sobe como rascunho; o scripts/publicar.mjs publica depois que todos os arquivos chegaram
+  releaseType: draft
 win:
   target: nsis
   icon: build/icon.ico
