@@ -665,25 +665,26 @@ input[type='checkbox'] { width: 17px; height: 17px; margin: 0; accent-color: var
 .busca .limpar { width: 24px; height: 24px; }
 .busca .limpar svg { width: 14px; height: 14px; }
 
-/* ---------- Painel Ajustes: desliza por cima da tabela ---------- */
-.veu-ajustes { position: absolute; inset: 0; z-index: 19; padding: 0; border: 0; background: rgb(4 8 20 / 0.55); cursor: default; animation: aparecer 0.2s var(--suave); }
+/* ---------- Painel Ajustes: uma janela no meio, por cima da tabela (o campo do link continua à vista) ---------- */
+.veu-ajustes { position: absolute; inset: 0; z-index: 19; padding: 0; border: 0; background: rgb(4 8 20 / 0.62); cursor: default; animation: aparecer 0.2s var(--suave); }
 .painel-ajustes {
   position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
+  top: 4px;
+  bottom: 24px;
+  left: 50%;
   z-index: 20;
-  width: min(1040px, 100%);
+  width: min(1040px, calc(100% - 2 * var(--margem)));
   display: flex;
   flex-direction: column;
   background: var(--chao);
-  border-top: 1px solid var(--linha-forte);
-  border-left: 1px solid var(--linha-forte);
-  border-radius: 12px 0 0 0;
-  box-shadow: -28px 0 56px -28px rgb(2 5 16 / 0.75);
-  animation: deslizar 0.26s var(--suave);
+  border: 1px solid var(--linha-forte);
+  border-radius: 14px;
+  box-shadow: 0 26px 70px rgb(2 5 16 / 0.6);
+  transform: translateX(-50%);
+  overflow: hidden;
+  animation: subir-ajustes 0.26s var(--suave);
 }
-@keyframes deslizar { from { transform: translateX(48px); opacity: 0; } }
+@keyframes subir-ajustes { from { transform: translate(-50%, 12px); opacity: 0; } }
 @keyframes aparecer { from { opacity: 0; } }
 .cabeca-painel { flex: none; display: flex; align-items: flex-end; gap: 22px; padding: 12px 18px 0 24px; border-bottom: 1px solid var(--linha); }
 .cabeca-painel h2 { margin: 0 0 11px; font: 650 20px/1.2 var(--ui-titulo); }
