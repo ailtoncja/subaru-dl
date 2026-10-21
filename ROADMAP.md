@@ -101,6 +101,9 @@ Legenda: `[ ]` a fazer · `[x]` pronto
 - [x] 88. Tela de dependências
 - [x] 89. Logs com filtros, exportação e dicas automáticas de erro
 - [x] 92. Busca dentro das configurações
+- [x] 93. Assistente de primeiro uso: pastas, jeito de baixar (vídeo ou áudio, qualidade, formato) e contas (Firefox
+  conectado direto; Chrome, Edge e afins pelo cookies.txt da extensão, com o navegador padrão já sugerido). Abre só na
+  primeira vez, com "Pular" sempre à vista; depois fica em Ajustes → Sistema
 
 ---
 

@@ -7,7 +7,7 @@ import { ESQUEMA_MINIATURA } from '@shared/miniatura'
 import * as atualizador from './atualizador'
 import * as cfg from './configuracoes'
 import { enviarCookiesAoCelular, procurarCelulares } from './celular'
-import { acharCookiesBaixado, arquivoCookies, exportarCookies, importarCookies } from './cookies'
+import { acharCookiesBaixado, arquivoCookies, exportarCookies, importarCookies, navegadorPadrao } from './cookies'
 import * as galeria from './galeria'
 import * as ferramentas from './ferramentas'
 import * as fila from './fila'
@@ -175,6 +175,7 @@ const handlers: Handlers = {
   obterSegredos: async () => cfg.obterSegredos(),
   salvarSegredos: async (s) => cfg.salvarSegredos(s),
   perfisNavegador: async (navegador) => perfisDoNavegador(navegador),
+  navegadorPadrao: async () => navegadorPadrao(),
   exportarCookies: async (navegador, perfil, soSites) => exportarCookies(navegador, perfil, soSites),
   importarCookies: async (caminho, soSites) => importarCookies(caminho, soSites),
   acharCookiesBaixado: async () => acharCookiesBaixado(),

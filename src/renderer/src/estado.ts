@@ -41,6 +41,8 @@ interface Estado {
   /** Link que o campo deve abrir (Ctrl+V fora de um campo de texto) */
   linkParaAbrir: string | null
   duplicados: PedidoDuplicados | null
+  /** Assistente de primeiro uso (abre sozinho na primeira vez; depois, por Ajustes → Sistema) */
+  assistenteAberto: boolean
   toasts: Toast[]
   irAjustes: (aba: AbaAjustes) => void
   fecharAjustes: () => void
@@ -61,6 +63,7 @@ export const useEstado = create<Estado>((set) => ({
   linkCopiado: null,
   linkParaAbrir: null,
   duplicados: null,
+  assistenteAberto: false,
   toasts: [],
   irAjustes: (abaAjustes) => set({ ajustesAberto: true, abaAjustes }),
   fecharAjustes: () => set({ ajustesAberto: false }),
@@ -119,7 +122,7 @@ export async function iniciarEstado(): Promise<void> {
     api.obterHistorico(),
     api.obterGaleria()
   ])
-  useEstado.setState({ fila, config, logs, historico, galeria })
+  useEstado.setState({ fila, config, logs, historico, galeria, assistenteAberto: !config.setupConcluido })
 
   api.aoMudarFila((fila) => useEstado.setState({ fila }))
   api.aoMudarHistorico((historico) => useEstado.setState({ historico }))

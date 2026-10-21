@@ -371,6 +371,9 @@ The board is a 108px Board Navy strip on the shared grid, with an inset strong-r
 - **Error detail:** an extra line of text under the row (reason in red, hint in Muted Ink), with no box.
 - **First run:** the table appears with its header and three step rows (zone tiles 01 to 03) instead of an empty state.
 
+### First-run Assistant
+A 720px dialog pinned near the top (it never jumps between steps) that opens only on the first launch, over the main screen. Its header is the step rail: three zone tiles (01 Pastas, 02 Jeito de baixar, 03 Contas), the current one yellow (act), the done ones Top Panel with a check, the pending ones Raised Panel in Dim Ink, joined by 1px strong rules; "Pular" sits at the right as a small ghost button, and Esc skips too. Each step opens with a Title (20px) and a Muted Ink lead, then one card of rows. The footer carries "Etapa N de 3" in Dim Ink, a ghost "Voltar" and the one yellow button ("Continuar", then "Concluir"). The Chrome / Edge path is an ordered list in a Well Navy box with Archivo 17px step numbers in Dim Ink. Results use the navy notice (success) or the error notice, never gold.
+
 ### Thumbnail Badges
 Small labels laid over a thumbnail (duration, photo index, VÍDEO, and "Transmissão ao vivo" for a livestream source) share one form. They use a translucent navy plate (rgb(4 8 20 / 0.82)) with 5px corners (4px on grid tiles) and Ink text in Segoe 600 to 700 at 10 to 12px. They carry no state colour, so the scoreboard stays the only place that says AO VIVO.
 

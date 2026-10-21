@@ -1,9 +1,10 @@
-import { Cookie, Download, FolderOpen, RefreshCw, RotateCcw, Search, Send, Smartphone, X } from 'lucide-react'
+import { Cookie, Download, FolderOpen, RefreshCw, RotateCcw, Search, Send, Smartphone, Wand2, X } from 'lucide-react'
 import { Fragment, useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
 import type { CampoNome, CelularEncontrado, Configuracoes as TConfig, Navegador, OpcoesDownload, Segredos } from '@shared/tipos'
 import { SelecaoOrganizar, SelecaoOrganizarGaleria } from '../componentes/Destino'
 import { EditorLegendas, EditorPosProcesso, EditorQualidade } from '../componentes/EditorOpcoes'
 import { Dialogo, Etiquetas, Interruptor, Linha, LinhaInterruptor, Selecao } from '../componentes/ui'
+import { ehChromium, lojaExtensao, useCookies } from '../cookies'
 import { avisar, salvarConfig, useEstado } from '../estado'
 
 interface ItemConfig {
@@ -138,10 +139,8 @@ export default function Configuracoes() {
   const [atualizacao, setAtualizacao] = useState('')
   const estadoAtualizacao = useEstado((s) => s.atualizacao)
   const [confirmarReset, setConfirmarReset] = useState(false)
-  const [gerandoCookies, setGerandoCookies] = useState(false)
+  const cookies = useCookies()
   const [soSitesDeVideo, setSoSitesDeVideo] = useState(true)
-  const [resultadoCookies, setResultadoCookies] = useState<{ ok: boolean; texto: string } | null>(null)
-  const [importandoCookies, setImportandoCookies] = useState(false)
   const [celulares, setCelulares] = useState<CelularEncontrado[] | null>(null)
   const [procurandoCelular, setProcurandoCelular] = useState(false)
   const [enderecoCelular, setEnderecoCelular] = useState('')
@@ -177,46 +176,10 @@ export default function Configuracoes() {
   }
 
   /** Lê os cookies do navegador, grava o cookies.txt e já passa a usá-lo. */
-  const gerarCookies = async () => {
-    setGerandoCookies(true)
-    setResultadoCookies(null)
-    const r = await window.api.exportarCookies(c.cookies.navegador, c.cookies.perfil, soSitesDeVideo)
-    setGerandoCookies(false)
-    if (r.ok) {
-      await salvarConfig({ cookies: { ...c.cookies, origem: 'arquivo', arquivo: r.arquivo } })
-      setResultadoCookies({ ok: true, texto: `${r.salvos} cookies de ${r.sites} sites salvos. O programa já está usando esse arquivo.` })
-    } else {
-      setResultadoCookies({ ok: false, texto: r.erro ?? 'Não consegui gerar o cookies.txt.' })
-    }
-  }
-
+  const gerarCookies = () => void cookies.gerar(c.cookies.navegador, c.cookies.perfil, soSitesDeVideo)
   /** Chrome e Edge: importa o cookies.txt que a extensão exportou (acha sozinho na pasta Downloads, ou pergunta). */
-  const importarCookiesExtensao = async () => {
-    setImportandoCookies(true)
-    setResultadoCookies(null)
-    let caminho = await window.api.acharCookiesBaixado()
-    const achadoSozinho = !!caminho
-    if (!caminho) caminho = await window.api.escolherArquivo([{ name: 'Cookies (cookies.txt)', extensions: ['txt'] }])
-    if (!caminho) {
-      setImportandoCookies(false)
-      return
-    }
-    const r = await window.api.importarCookies(caminho, soSitesDeVideo)
-    setImportandoCookies(false)
-    if (r.ok) {
-      await salvarConfig({ cookies: { ...c.cookies, origem: 'arquivo', arquivo: r.arquivo } })
-      const nome = caminho.split(/[\\/]/).pop()
-      setResultadoCookies({
-        ok: true,
-        texto: `${r.salvos} cookies de ${r.sites} sites importados${achadoSozinho ? ` (achei "${nome}" na pasta Downloads)` : ''}. O programa já está usando esse arquivo.`
-      })
-    } else {
-      setResultadoCookies({ ok: false, texto: r.erro ?? 'Não consegui importar o cookies.txt.' })
-    }
-  }
-
-  /** Chrome, Edge e afins travam a leitura automática dos cookies; só o Firefox funciona por esse caminho. */
-  const ehChromium = c.cookies.navegador !== 'firefox' && c.cookies.navegador !== 'nenhum'
+  const importarCookiesExtensao = () => void cookies.importar(soSitesDeVideo)
+  const { gerando: gerandoCookies, importando: importandoCookies, resultado: resultadoCookies } = cookies
 
   const mudarPadrao = (parcial: Partial<OpcoesDownload>) => salvarConfig({ padrao: { ...c.padrao, ...parcial } })
   const mudarSegredo = async (parcial: Partial<Segredos>) => {
@@ -627,7 +590,7 @@ export default function Configuracoes() {
                 <input type="checkbox" checked={soSitesDeVideo} onChange={(e) => setSoSitesDeVideo(e.target.checked)} />
                 Só os sites de vídeo e imagem (YouTube, Instagram, X, TikTok, Twitch…) — recomendado
               </label>
-              {ehChromium && (
+              {ehChromium(c.cookies.navegador) && (
                 <div
                   style={{
                     marginTop: 10,
@@ -646,13 +609,7 @@ export default function Configuracoes() {
                   <div className="flex" style={{ flexWrap: 'wrap', gap: 8 }}>
                     <button
                       className="btn pequeno"
-                      onClick={() =>
-                        void window.api.abrirLink(
-                          c.cookies.navegador === 'edge'
-                            ? 'https://microsoftedge.microsoft.com/addons/search/cookies.txt'
-                            : 'https://chromewebstore.google.com/search/get%20cookies.txt'
-                        )
-                      }
+                      onClick={() => void window.api.abrirLink(lojaExtensao(c.cookies.navegador))}
                     >
                       <Download /> 1. Instalar extensão
                     </button>
@@ -1043,6 +1000,16 @@ export default function Configuracoes() {
                 </button>
               )}
               <Interruptor ligado={c.atualizarApp} aoMudar={(atualizarApp) => salvarConfig({ atualizarApp })} />
+            </Linha>
+          )
+        },
+        {
+          texto: 'assistente primeiro uso configurar começo setup iniciante pastas cookies contas',
+          el: (
+            <Linha rotulo="Assistente de primeiro uso" dica="As três escolhas do começo: pastas, jeito de baixar e contas (cookies).">
+              <button className="btn pequeno" onClick={() => useEstado.setState({ assistenteAberto: true, ajustesAberto: false })}>
+                <Wand2 /> Abrir o assistente
+              </button>
             </Linha>
           )
         },

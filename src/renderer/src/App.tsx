@@ -1,6 +1,7 @@
 import { AlertCircle, CheckCircle2, Copy, Loader2, Minus, RefreshCw, Settings, Square, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import icone from '../../../resources/icone.png'
+import { Assistente } from './componentes/Assistente'
 import { DialogoDuplicados } from './componentes/DialogoDuplicados'
 import { Dialogo } from './componentes/ui'
 import { abrirNoInicio, avisar, extrairLinks, useEstado } from './estado'
@@ -14,7 +15,7 @@ async function colarUrl() {
 }
 
 export default function App() {
-  const { config, toasts, ferramentas, ajustesAberto, abaAjustes, irAjustes, fecharAjustes, atualizacao, fila, galeria } = useEstado()
+  const { config, toasts, ferramentas, ajustesAberto, abaAjustes, irAjustes, fecharAjustes, atualizacao, fila, galeria, assistenteAberto } = useEstado()
   const [maximizada, setMaximizada] = useState(false)
   const [confirmarReinicio, setConfirmarReinicio] = useState(false)
   const baixandoAgora =
@@ -29,7 +30,8 @@ export default function App() {
   useEffect(() => {
     const tecla = (e: KeyboardEvent) => {
       const alvo = e.target as HTMLElement
-      if (!(e.ctrlKey && e.key.toLowerCase() === 'v') || /INPUT|TEXTAREA/.test(alvo.tagName)) return
+      // Com um diálogo aberto (ex.: o assistente) o link não vai para a tela de trás
+      if (!(e.ctrlKey && e.key.toLowerCase() === 'v') || /INPUT|TEXTAREA/.test(alvo.tagName) || document.querySelector('.fundo-dialogo')) return
       e.preventDefault()
       void colarUrl()
     }
@@ -83,6 +85,8 @@ export default function App() {
       <Principal />
 
       <DialogoDuplicados />
+
+      {assistenteAberto && <Assistente />}
 
       {confirmarReinicio && (
         <Dialogo
