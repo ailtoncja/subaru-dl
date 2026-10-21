@@ -28,6 +28,12 @@ export default function Principal() {
   // O campo de cada modo é desenhado aqui no alto (portal), ao lado da escolha Vídeo / Áudio / Imagens
   const [slot, setSlot] = useState<HTMLDivElement | null>(null)
 
+  // Ao fechar o assistente, a tela começa no jeito de baixar escolhido lá
+  const assistenteAberto = useEstado((s) => s.assistenteAberto)
+  useEffect(() => {
+    if (!assistenteAberto) setModo((atual) => (atual === 'imagens' ? atual : config.padrao.modo === 'audio' ? 'audio' : 'video'))
+  }, [assistenteAberto])
+
   // Link vindo do Ctrl+V fora de um campo ou do aviso de link copiado
   useEffect(() => {
     if (!linkParaAbrir) return

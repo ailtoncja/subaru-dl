@@ -81,7 +81,8 @@ function configuracoesPadrao(): Configuracoes {
     galeriaIntervalo: '',
     galeriaOrganizar: 'padrao',
     galeriaFormatoPasta: '{category}/{user}',
-    galeriaPausa: 0
+    galeriaPausa: 0,
+    setupConcluido: false
   }
 }
 
@@ -104,7 +105,12 @@ let atual: Configuracoes | null = null
 const ouvintes: Array<(c: Configuracoes) => void> = []
 
 export function configuracoes(): Configuracoes {
-  if (!atual) atual = mesclar(configuracoesPadrao(), lerJson('configuracoes.json', {}))
+  if (!atual) {
+    const salvo = lerJson<Record<string, unknown>>('configuracoes.json', {})
+    // Quem já usava o programa antes do assistente existir não precisa vê-lo
+    if (Object.keys(salvo).length && !('setupConcluido' in salvo)) salvo.setupConcluido = true
+    atual = mesclar(configuracoesPadrao(), salvo)
+  }
   return atual
 }
 
@@ -120,7 +126,8 @@ export function salvarConfiguracoes(parcial: Partial<Configuracoes>): Configurac
 }
 
 export function restaurarPadroes(): Configuracoes {
-  atual = configuracoesPadrao()
+  // Restaurar os padrões não traz o assistente de volta (ele continua em Ajustes → Sistema)
+  atual = { ...configuracoesPadrao(), setupConcluido: true }
   gravarJson('configuracoes.json', atual)
   for (const cb of ouvintes) cb(atual)
   return atual

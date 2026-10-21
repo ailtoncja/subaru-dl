@@ -1,10 +1,33 @@
 // Gera um cookies.txt a partir dos cookies do navegador (o yt-dlp lê o navegador e grava o arquivo).
 import { app } from 'electron'
+import { execFile } from 'node:child_process'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { ResultadoCookies } from '@shared/tipos'
+import type { Navegador, ResultadoCookies } from '@shared/tipos'
 import { executarAteFim } from './ferramentas'
 import { logar } from './logs'
+
+/** ProgId do navegador que abre links https no Windows → o navegador que o yt-dlp conhece */
+const PROGIDS: Array<[RegExp, Navegador]> = [
+  [/^FirefoxURL/i, 'firefox'],
+  [/^MSEdgeHTM/i, 'edge'],
+  [/^ChromeHTML/i, 'chrome'],
+  [/^BraveHTML/i, 'brave'],
+  [/^Opera/i, 'opera'],
+  [/^VivaldiHTM/i, 'vivaldi'],
+  [/^ChromiumHTM/i, 'chromium']
+]
+
+/** O navegador padrão do Windows, para o assistente já sugerir o caminho certo dos cookies. */
+export function navegadorPadrao(): Promise<Navegador> {
+  const chave = 'HKCU\\Software\\Microsoft\\Windows\\Shell\\Associations\\UrlAssociations\\https\\UserChoice'
+  return new Promise((resolve) => {
+    execFile('reg', ['query', chave, '/v', 'ProgId'], { windowsHide: true, timeout: 5000 }, (erro, saida) => {
+      const progId = erro ? '' : (/ProgId\s+REG_SZ\s+(\S+)/i.exec(saida)?.[1] ?? '')
+      resolve(PROGIDS.find(([re]) => re.test(progId))?.[1] ?? 'nenhum')
+    })
+  })
+}
 
 /** Sites de vídeo e imagem: com a opção "só sites de vídeo", o resto dos cookies do navegador nem sai do navegador. */
 const DOMINIOS = [

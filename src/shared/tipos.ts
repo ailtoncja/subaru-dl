@@ -259,6 +259,8 @@ export interface Configuracoes {
   atualizarFerramentas: boolean
   canalYtdlp: CanalAtualizacao
   atualizarApp: boolean
+  /** O assistente de primeiro uso já foi concluído ou pulado */
+  setupConcluido: boolean
 
   // Galeria
   pastaGaleria: string

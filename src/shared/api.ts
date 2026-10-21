@@ -11,6 +11,7 @@ import type {
   ItemFila,
   ItemGaleria,
   ItemLote,
+  Navegador,
   NomeFerramenta,
   OpcoesDownload,
   OrganizarGaleria,
@@ -79,6 +80,8 @@ export interface ApiSubaru {
   obterSegredos(): Promise<Segredos>
   salvarSegredos(segredos: Segredos): Promise<void>
   perfisNavegador(navegador: string): Promise<string[]>
+  /** O navegador padrão do Windows (o que abre os links), ou 'nenhum' se não for um dos conhecidos */
+  navegadorPadrao(): Promise<Navegador>
   /** Lê os cookies do navegador e grava um cookies.txt pronto para o yt-dlp e o gallery-dl */
   exportarCookies(navegador: string, perfil: string, soSites: boolean): Promise<ResultadoCookies>
   /** Importa um cookies.txt (ex.: exportado por extensão no Chrome/Edge), valida e passa a usá-lo */
@@ -167,6 +170,7 @@ export const CANAIS_INVOKE = [
   'obterSegredos',
   'salvarSegredos',
   'perfisNavegador',
+  'navegadorPadrao',
   'exportarCookies',
   'importarCookies',
   'acharCookiesBaixado',
