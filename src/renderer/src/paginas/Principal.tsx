@@ -1,5 +1,5 @@
 // A tela única: escolhe Vídeo, Áudio ou Imagens, cola o link, acompanha no placar ao vivo e acha tudo na tabela.
-// O campo e o placar ficam fixos no alto; a prévia e a tabela rolam embaixo; Ajustes desliza por cima da tabela.
+// O campo e o placar ficam fixos no alto; a prévia e a tabela rolam embaixo; Ajustes abre numa janela no meio, por cima da tabela.
 import { Images, Music, Video } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Placar } from '../componentes/Placar'

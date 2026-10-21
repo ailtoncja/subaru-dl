@@ -243,7 +243,7 @@ components:
 
 **Creative North Star: "Placar Ao Vivo"**
 
-Downloads run like a live round of Brazilian football on television. Whatever is downloading now sits on a broadcast scoreboard pinned under the link field, its percent, time left and speed counting like a match clock. Everything else (live, queued, failed, delivered) sits underneath in one league table on the same screen. The whole app is that one screen. Ajustes slides over the table from the right, and the field and scoreboard stay in view.
+Downloads run like a live round of Brazilian football on television. Whatever is downloading now sits on a broadcast scoreboard pinned under the link field, its percent, time left and speed counting like a match clock. Everything else (live, queued, failed, delivered) sits underneath in one league table on the same screen. The whole app is that one screen. Ajustes opens as a centred window over the table, and the field and scoreboard stay in view.
 
 The world is painted only in the three Subaru colours on a navy chassis. Navy carries the shell, the board and every rule. Yellow means live or act. Gold means delivered. Red means failed. Numbers have their own face, a condensed upright Archivo at three fixed sizes, the way broadcast graphics set the score apart from the commentary. Every word is Segoe UI Variable, so the app still reads as a native Windows tool. The paint is flat. Shadows appear only on layers that float.
 
@@ -321,7 +321,7 @@ One screen under a 40px custom title bar. The top row sits at a 20px top inset a
 
 **The Whole Column Rule.** Narrow windows drop whole columns and never squeeze them. Tipo leaves below 1400px, then Tamanho (with the scoreboard's speed) below 1180px, then Tempo below 1060px. The breakpoints live in both `colunas.ts` and the stylesheet's media queries. A dropped value moves to the line underneath: into the row's subline in the table, and into the neighbouring scoreboard cell's label on the board.
 
-Table rows are 54px (60px for the first-run steps), with 10px cell padding. Totals (count, running time, size) sit right-aligned at the table's foot. Ajustes is a right-hand panel up to 1040px wide over a 55% veil. It never replaces the screen.
+Table rows are 54px (60px for the first-run steps), with 10px cell padding. Totals (count, running time, size) sit right-aligned at the table's foot. Ajustes is a centred window up to 1040px wide (keeping the page margins at the sides), 4px under the top row and 24px above the window's foot, with 14px corners, over a 62% veil on the table area. It rises 12px and fades in. It never replaces the screen.
 
 ## Elevation & Depth
 
@@ -330,8 +330,7 @@ The paint is flat. Depth comes from navy tonal steps (barra < campo < chao < pai
 ### Shadow Vocabulary
 - **Menu** (`box-shadow: 0 18px 44px rgb(2 5 16 / 0.55)`): dropdown action menus.
 - **Toast** (`box-shadow: 0 12px 30px rgb(2 5 16 / 0.5)`): bottom-right toasts.
-- **Dialog** (`box-shadow: 0 26px 70px rgb(2 5 16 / 0.6)`): modal dialogs over a 74% veil.
-- **Side panel** (`box-shadow: -28px 0 56px -28px rgb(2 5 16 / 0.75)`): the Ajustes panel's left edge.
+- **Dialog** (`box-shadow: 0 26px 70px rgb(2 5 16 / 0.6)`): modal dialogs over a 74% veil, and the Ajustes window.
 - **Sticky bar** (`box-shadow: 0 -10px 24px -14px rgb(2 5 16 / 0.6)`): the preview action bar pinned at the foot of the mesa.
 
 ### Named Rules
@@ -403,5 +402,5 @@ There is no side rail. The title bar carries the icon and name, the tool-health 
 - **Don't** use yellow decoratively. If it is not live and not an action, it is not yellow.
 - **Don't** add a fourth numeral size or set words in Archivo.
 - **Don't** squeeze a column or ellipsise a number to make a narrow window fit.
-- **Don't** add a side rail or a page that replaces the main screen. Ajustes slides over the table.
+- **Don't** add a side rail or a page that replaces the main screen. Ajustes opens as a centred window over the table.
 - **Don't** use pure grey text or a light theme.

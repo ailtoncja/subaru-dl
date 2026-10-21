@@ -1,4 +1,4 @@
-// Ajustes: as preferências, as ferramentas embutidas e o registro, num painel que desliza por cima da tabela.
+// Ajustes: as preferências, as ferramentas embutidas e o registro, numa janela no meio, por cima da tabela.
 // O campo do link e o placar continuam à vista em cima; Esc ou o X fecham e a tabela está onde estava.
 import { Package, ScrollText, SlidersHorizontal, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
