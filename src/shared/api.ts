@@ -17,7 +17,8 @@ import type {
   OrganizarGaleria,
   ResultadoCookies,
   ResultadoEnvioCelular,
-  Segredos
+  Segredos,
+  SegredosVisiveis
 } from './tipos'
 
 /** O que a interface pode pedir para o motor. Exposto em window.api pelo preload. */
@@ -77,8 +78,10 @@ export interface ApiSubaru {
   obterConfiguracoes(): Promise<Configuracoes>
   salvarConfiguracoes(parcial: Partial<Configuracoes>): Promise<Configuracoes>
   restaurarPadroes(): Promise<Configuracoes>
-  obterSegredos(): Promise<Segredos>
-  salvarSegredos(segredos: Segredos): Promise<void>
+  /** O usuário e quais segredos estão preenchidos (senhas, token e cabeçalhos nunca voltam para a interface) */
+  obterSegredos(): Promise<SegredosVisiveis>
+  /** Troca só os campos enviados */
+  salvarSegredos(segredos: Partial<Segredos>): Promise<void>
   perfisNavegador(navegador: string): Promise<string[]>
   /** O navegador padrão do Windows (o que abre os links), ou 'nenhum' se não for um dos conhecidos */
   navegadorPadrao(): Promise<Navegador>

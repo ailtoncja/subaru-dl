@@ -39,12 +39,25 @@ function todas(): EntradaHistorico[] {
   return entradas
 }
 
+/** Caminho de rede (\\servidor\…): nunca é tocado, porque abrir já manda a identidade do Windows ao servidor. */
+const deRede = (arquivo: string) => /^[\\/]{2}/.test(arquivo)
+
+function existe(arquivo: string): boolean {
+  return !deRede(arquivo) && existsSync(arquivo)
+}
+
 function tamanhoDe(arquivo: string): number {
+  if (deRede(arquivo)) return 0
   try {
     return statSync(arquivo).size
   } catch {
     return 0
   }
+}
+
+/** Um arquivo que está no histórico (só esses a interface pode abrir ou mostrar na pasta). */
+export function noHistorico(arquivo: string): boolean {
+  return !deRede(arquivo) && todas().some((e) => e.arquivo === arquivo)
 }
 
 function mudou() {
@@ -62,7 +75,7 @@ export function salvarHistoricoAgora(): void {
 
 /** Mais recentes primeiro, com a informação de arquivo existente. */
 export function listarHistorico(): EntradaHistorico[] {
-  return [...todas()].reverse().map((e) => ({ ...e, arquivoExiste: existsSync(e.arquivo) }))
+  return [...todas()].reverse().map((e) => ({ ...e, arquivoExiste: existe(e.arquivo) }))
 }
 
 // ---------- Duplicados ----------
@@ -93,7 +106,7 @@ export function procurarDuplicados(urls: string[]): Map<string, Duplicado> {
   const achados = new Map<string, Duplicado>()
   for (const url of urls) {
     const e = porChave.get(chaveDoLink(url))
-    if (e) achados.set(url, { url, titulo: e.titulo, baixadoEm: e.baixadoEm, arquivoExiste: existsSync(e.arquivo) })
+    if (e) achados.set(url, { url, titulo: e.titulo, baixadoEm: e.baixadoEm, arquivoExiste: existe(e.arquivo) })
   }
   return achados
 }

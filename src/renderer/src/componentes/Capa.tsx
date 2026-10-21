@@ -2,7 +2,7 @@
 import { FilePlay, Images, Music } from 'lucide-react'
 import { useState } from 'react'
 import { QUALIDADES } from '@shared/formatos'
-import { urlArquivoLocal } from '@shared/miniatura'
+import { capaRemota, urlArquivoLocal } from '@shared/miniatura'
 import type { ItemFila } from '@shared/tipos'
 
 /**
@@ -36,7 +36,7 @@ export function tipoDoItem(item: ItemFila): string {
 
 /** A capa de um vídeo ou áudio; sem imagem, o ícone do tipo. */
 export function Capa({ url, audio, classe = '' }: { url: string | null | undefined; audio?: boolean; classe?: string }) {
-  const src = miniaturaLinha(url)
+  const src = capaRemota(miniaturaLinha(url), classe === 'grande' ? 480 : 240)
   return (
     <span className={`capa-linha ${classe}`} style={src ? { backgroundImage: `url("${src}")` } : undefined} aria-hidden="true">
       {!src && <span className="vazia">{audio ? <Music /> : <FilePlay />}</span>}

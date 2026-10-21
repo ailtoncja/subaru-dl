@@ -1,13 +1,22 @@
-import { app, BrowserWindow, clipboard, dialog, ipcMain, protocol, shell } from 'electron'
-import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, protocol, session, shell, type IpcMainInvokeEvent } from 'electron'
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import type { ApiSubaru } from '@shared/api'
 import { EVENTOS } from '@shared/api'
 import { ESQUEMA_MINIATURA } from '@shared/miniatura'
 import * as atualizador from './atualizador'
 import * as cfg from './configuracoes'
 import { enviarCookiesAoCelular, procurarCelulares } from './celular'
-import { acharCookiesBaixado, arquivoCookies, exportarCookies, importarCookies, navegadorPadrao } from './cookies'
+import {
+  acharCookiesBaixado,
+  existemCookiesDoPrograma,
+  exportarCookies,
+  importarCookies,
+  lerCookiesDoPrograma,
+  navegadorPadrao,
+  prepararCookies
+} from './cookies'
 import * as galeria from './galeria'
 import * as ferramentas from './ferramentas'
 import * as fila from './fila'
@@ -15,7 +24,8 @@ import * as historico from './historico'
 import * as logs from './logs'
 import { limparCacheAntigo, servirMiniatura } from './miniaturas'
 import * as sistema from './sistema'
-import { buscarInfo } from './ytdlp'
+import { buscarInfo, pastaDoItem } from './ytdlp'
+import type { OpcoesDownload } from '@shared/tipos'
 
 let janela: BrowserWindow | null = null
 let saindo = false
@@ -53,7 +63,9 @@ function criarJanela() {
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: true,
-      contextIsolation: true
+      contextIsolation: true,
+      // Sem ferramentas de desenvolvedor no programa instalado: "cole isto no Ctrl+Shift+I" não funciona
+      devTools: !app.isPackaged
     }
   })
 
@@ -77,9 +89,13 @@ function criarJanela() {
     if (/^https?:/.test(url)) void shell.openExternal(url)
     return { action: 'deny' }
   })
-  janela.webContents.on('will-navigate', (e, url) => {
-    if (!url.startsWith('http://localhost') && !url.startsWith('file:')) e.preventDefault()
-  })
+  // A janela nunca sai da interface do programa (só o recarregamento do modo de desenvolvimento passa)
+  const bloquearNavegacao = (e: Electron.Event, url: string) => {
+    if (!enderecoDaInterface(url)) e.preventDefault()
+  }
+  janela.webContents.on('will-navigate', bloquearNavegacao)
+  janela.webContents.on('will-redirect', bloquearNavegacao)
+  janela.webContents.on('will-attach-webview', (e) => e.preventDefault())
 
   if (!app.isPackaged && process.env.ELECTRON_RENDERER_URL) {
     void janela.loadURL(process.env.ELECTRON_RENDERER_URL)
@@ -88,21 +104,67 @@ function criarJanela() {
   }
 }
 
+/** A interface do programa: o index.html empacotado, ou o servidor do electron-vite em desenvolvimento. */
+function enderecoDaInterface(url: string): boolean {
+  try {
+    const u = new URL(url)
+    if (!app.isPackaged && process.env.ELECTRON_RENDERER_URL) return u.origin === new URL(process.env.ELECTRON_RENDERER_URL).origin
+    return u.protocol === 'file:' && decodeURIComponent(u.pathname).toLowerCase() === decodeURIComponent(pathToFileURL(join(__dirname, '../renderer/index.html')).pathname).toLowerCase()
+  } catch {
+    return false
+  }
+}
+
+/** Só a interface do programa, no quadro principal da janela principal, conversa com o motor. */
+function remetenteValido(e: IpcMainInvokeEvent): boolean {
+  return !!janela && e.sender === janela.webContents && !!e.senderFrame && e.senderFrame === janela.webContents.mainFrame && enderecoDaInterface(e.senderFrame.url)
+}
+
+/** Pastas que a interface pode abrir: as de destino (configurações, fila, galeria). */
+function pastaConhecida(caminho: string): boolean {
+  if (/^[\\/]{2}/.test(caminho)) return false
+  const c = cfg.configuracoes()
+  const pastas = [c.pastaVideo, c.pastaAudio, c.pastaGaleria, c.padrao.pasta, ...fila.fila().map((i) => pastaDoItem(i, c)), ...galeria.pastasDaGaleria()]
+  return pastas.some((p) => p && resolve(p).toLowerCase() === resolve(caminho).toLowerCase())
+}
+
+/** Arquivos que a interface pode abrir ou mostrar: os do histórico e os últimos da galeria. */
+const arquivoConhecido = (caminho: string) => historico.noHistorico(caminho) || galeria.ehAmostra(caminho)
+
+/** Opções de um download vindas da interface: pasta escolhida pelo usuário e modelos dentro da pasta. */
+function conferirOpcoes(opcoes: Partial<OpcoesDownload> | undefined | null): void {
+  if (!opcoes) return
+  if (!cfg.caminhoPermitido(opcoes.pasta)) throw new Error('Escolha a pasta pelo botão "Escolher…".')
+  if (opcoes.subpastaPersonalizada !== undefined) cfg.conferirModelo(opcoes.subpastaPersonalizada, 'A subpasta personalizada')
+}
+
 // ---------- IPC: cada método da ApiSubaru vira um handler ----------
 
 type Handlers = { [K in keyof ApiSubaru as K extends `ao${string}` ? never : K]: ApiSubaru[K] }
 
 const handlers: Handlers = {
   lerLink: async (url) => {
-    const info = await buscarInfo(url, cfg.configuracoes(), cfg.obterSegredos(), null)
+    if (!/^https?:\/\/\S+$/i.test(url.trim())) throw new Error('Link inválido.')
+    const info = await buscarInfo(url.trim(), cfg.configuracoes(), cfg.obterSegredos(), null)
     return { info, duplicado: historico.procurarDuplicados([url]).get(url) ?? null }
   },
-  adicionar: async (urls, opcoes, iniciar) => fila.adicionar(urls, opcoes, iniciar),
+  adicionar: async (urls, opcoes, iniciar) => {
+    conferirOpcoes(opcoes)
+    return fila.adicionar(urls, opcoes, iniciar)
+  },
   adicionarMesmoAssim: async (urls, opcoes, iniciar) => {
+    conferirOpcoes(opcoes)
     fila.adicionar(urls, opcoes, iniciar, true)
   },
-  adicionarComInfo: async (url, info, opcoes, iniciar) => fila.adicionarComInfo(url, info, opcoes, iniciar),
-  adicionarLote: async (lote, iniciar, ignorar) => fila.adicionarLote(lote, iniciar, ignorar),
+  adicionarComInfo: async (url, info, opcoes, iniciar) => {
+    conferirOpcoes(opcoes)
+    if (!/^https?:\/\/\S+$/i.test(url.trim())) throw new Error('Link inválido.')
+    fila.adicionarComInfo(url.trim(), info, opcoes, iniciar)
+  },
+  adicionarLote: async (lote, iniciar, ignorar) => {
+    for (const l of lote) conferirOpcoes(l.opcoes)
+    return fila.adicionarLote(lote, iniciar, ignorar)
+  },
   remover: async (ids) => fila.remover(ids),
   iniciarFila: async () => fila.iniciarFila(),
   pausarTodos: async () => fila.pausarTodos(),
@@ -110,7 +172,10 @@ const handlers: Handlers = {
   retomar: async (id) => fila.retomar(id),
   tentarDeNovo: async (id) => fila.tentarDeNovo(id),
   baixarAgora: async (id) => fila.baixarAgora(id),
-  atualizarOpcoes: async (id, opcoes) => fila.atualizarOpcoes(id, opcoes),
+  atualizarOpcoes: async (id, opcoes) => {
+    conferirOpcoes(opcoes)
+    fila.atualizarOpcoes(id, opcoes)
+  },
   mover: async (id, direcao) => fila.mover(id, direcao),
   dividirPlaylist: async (id) => fila.dividirPlaylist(id),
   obterFila: async () => fila.fila(),
@@ -120,33 +185,47 @@ const handlers: Handlers = {
   limparHistorico: async () => historico.limparHistorico(),
 
   obterGaleria: async () => galeria.listarGaleria(),
-  adicionarGaleria: async (urls, pasta, organizar, intervalo, formato) => galeria.adicionarGaleria(urls, pasta, organizar, intervalo, formato),
+  adicionarGaleria: async (urls, pasta, organizar, intervalo, formato) => {
+    if (!cfg.caminhoPermitido(pasta)) throw new Error('Escolha a pasta pelo botão "Escolher…".')
+    if (formato) cfg.conferirModelo(formato, 'O formato das pastas')
+    return galeria.adicionarGaleria(urls, pasta, organizar, intervalo, formato)
+  },
   listarArquivosGaleria: async (url, inicio, quantidade) => galeria.listarArquivosGaleria(url, inicio, quantidade),
   pausarGaleria: async (id) => galeria.pausarGaleria(id),
   retomarGaleria: async (id) => galeria.retomarGaleria(id),
   removerGaleria: async (ids) => galeria.removerGaleria(ids),
   limparGaleriaConcluidos: async () => galeria.limparGaleriaConcluidos(),
 
+  // Abrir só pastas de destino e arquivos baixados: a interface não abre (nem executa) qualquer caminho
   abrirPasta: async (caminho) => {
+    if (!pastaConhecida(caminho)) return logs.logar('aviso', `Pasta desconhecida não foi aberta: ${caminho}`)
     mkdirSync(caminho, { recursive: true })
     const erro = await shell.openPath(caminho)
     if (erro) logs.logar('erro', `Não foi possível abrir ${caminho}: ${erro}`)
   },
   abrirArquivo: async (caminho) => {
+    if (!arquivoConhecido(caminho)) return logs.logar('aviso', `Arquivo desconhecido não foi aberto: ${caminho}`)
     const erro = await shell.openPath(caminho)
     if (erro) logs.logar('erro', `Não foi possível abrir ${caminho}: ${erro}`)
   },
   mostrarNaPasta: async (caminho) => {
-    if (existsSync(caminho) && !statSync(caminho).isDirectory()) shell.showItemInFolder(caminho)
-    else void shell.openPath(existsSync(caminho) ? caminho : dirname(caminho))
+    if (!arquivoConhecido(caminho)) return
+    if (existsSync(caminho) && statSync(caminho).isFile()) return shell.showItemInFolder(caminho)
+    // O arquivo sumiu: abre a pasta dele, se ela ainda for uma pasta
+    const pasta = dirname(caminho)
+    if (existsSync(pasta) && statSync(pasta).isDirectory()) void shell.openPath(pasta)
   },
   escolherPasta: async (atual) => {
     const r = await dialog.showOpenDialog(janela!, { defaultPath: atual, properties: ['openDirectory', 'createDirectory'] })
-    return r.canceled ? null : r.filePaths[0]
+    if (r.canceled) return null
+    cfg.registrarEscolhido(r.filePaths[0])
+    return r.filePaths[0]
   },
   escolherArquivo: async (filtros) => {
     const r = await dialog.showOpenDialog(janela!, { properties: ['openFile'], filters: filtros })
-    return r.canceled ? null : r.filePaths[0]
+    if (r.canceled) return null
+    cfg.registrarEscolhido(r.filePaths[0])
+    return r.filePaths[0]
   },
   lerArquivoLinks: async () => {
     const r = await dialog.showOpenDialog(janela!, {
@@ -172,20 +251,30 @@ const handlers: Handlers = {
   obterConfiguracoes: async () => cfg.configuracoes(),
   salvarConfiguracoes: async (parcial) => cfg.salvarConfiguracoes(parcial),
   restaurarPadroes: async () => cfg.restaurarPadroes(),
-  obterSegredos: async () => cfg.obterSegredos(),
+  // Senhas, token e cabeçalhos não voltam para a interface: ela vê só o que está preenchido
+  obterSegredos: async () => cfg.segredosVisiveis(),
   salvarSegredos: async (s) => cfg.salvarSegredos(s),
   perfisNavegador: async (navegador) => perfisDoNavegador(navegador),
   navegadorPadrao: async () => navegadorPadrao(),
   exportarCookies: async (navegador, perfil, soSites) => exportarCookies(navegador, perfil, soSites),
-  importarCookies: async (caminho, soSites) => importarCookies(caminho, soSites),
-  acharCookiesBaixado: async () => acharCookiesBaixado(),
+  importarCookies: async (caminho, soSites) => {
+    if (!cfg.caminhoPermitido(caminho)) throw new Error('Escolha o arquivo pelo botão.')
+    return importarCookies(caminho, soSites)
+  },
+  acharCookiesBaixado: async () => {
+    const achado = acharCookiesBaixado()
+    if (achado) cfg.registrarEscolhido(achado)
+    return achado
+  },
   procurarCelulares: async () => procurarCelulares(),
   enviarCookiesAoCelular: async (endereco, codigo) => enviarCookiesAoCelular(endereco, codigo),
   salvarCookiesComo: async () => {
-    if (!existsSync(arquivoCookies())) return null
+    if (!existemCookiesDoPrograma()) return null
     const r = await dialog.showSaveDialog(janela!, { defaultPath: 'cookies.txt', filters: [{ name: 'cookies.txt', extensions: ['txt'] }] })
     if (r.canceled || !r.filePath) return null
-    copyFileSync(arquivoCookies(), r.filePath)
+    const texto = lerCookiesDoPrograma()
+    if (texto == null) return null
+    writeFileSync(r.filePath, texto, 'utf8')
     return r.filePath
   },
 
@@ -213,7 +302,13 @@ const handlers: Handlers = {
 
 function registrarIpc() {
   for (const [canal, fn] of Object.entries(handlers)) {
-    ipcMain.handle(canal, (_e, ...args: unknown[]) => (fn as (...a: unknown[]) => unknown)(...args))
+    ipcMain.handle(canal, (e, ...args: unknown[]) => {
+      if (!remetenteValido(e)) {
+        logs.logar('aviso', `Pedido ao motor recusado (${canal}): não veio da interface do programa.`)
+        throw new Error('Pedido recusado.')
+      }
+      return (fn as (...a: unknown[]) => unknown)(...args)
+    })
   }
 }
 
@@ -274,10 +369,18 @@ function aplicarConfiguracoesDeSistema() {
   sistema.aplicarInicioAutomatico(c)
 }
 
+// Sem o menu padrão do Electron (que traz atalhos de desenvolvedor como Ctrl+Shift+I e Ctrl+R)
+Menu.setApplicationMenu(null)
+
 app.whenReady().then(() => {
+  // Câmera, microfone, localização, notificações do site…: a interface não precisa de nenhuma permissão
+  session.defaultSession.setPermissionRequestHandler((_w, _p, responder) => responder(false))
+  session.defaultSession.setPermissionCheckHandler(() => false)
+
   // Miniaturas reduzidas e em cache; do disco, só imagens saem por aqui
   protocol.handle(ESQUEMA_MINIATURA, servirMiniatura)
   limparCacheAntigo()
+  prepararCookies()
 
   app.setAppUserModelId('local.subaru.dl')
   ferramentas.prepararFerramentas()

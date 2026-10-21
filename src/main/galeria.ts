@@ -4,10 +4,13 @@ import { join } from 'node:path'
 import { createInterface } from 'node:readline'
 import { EXTENSOES_IMAGEM } from '@shared/miniatura'
 import type { ArquivoGaleria, ItemGaleria, OrganizarGaleria } from '@shared/tipos'
+import { prepararAcesso, type Acesso } from './acesso'
 import { gravadorAdiado, lerJson, pastaDados } from './armazenamento'
 import { configuracoes, obterSegredos } from './configuracoes'
+import { programaDoSistema } from './cookies'
 import { executar, executarAteFim } from './ferramentas'
-import { dicaParaErro, logar } from './logs'
+import { dentroDaPasta } from './fila'
+import { dicaParaErro, logar, mascararArgs } from './logs'
 
 let itens: ItemGaleria[] = []
 const processos = new Map<string, ChildProcess>()
@@ -110,23 +113,19 @@ function agendar() {
   }
 }
 
-/** Cookies, login e proxy: os mesmos dos vídeos. */
-function argsAcesso(): string[] {
-  const c = configuracoes()
-  const s = obterSegredos()
-  const a: string[] = []
-  if (c.cookies.origem === 'navegador' && c.cookies.navegador !== 'nenhum') {
-    a.push('--cookies-from-browser', c.cookies.navegador + (c.cookies.perfil ? `:${c.cookies.perfil}` : ''))
-  } else if (c.cookies.origem === 'arquivo' && c.cookies.arquivo) {
-    a.push('--cookies', c.cookies.arquivo)
-  }
-  if (s.usuario) a.push('-u', s.usuario)
-  if (s.senha) a.push('-p', s.senha)
-  if (c.proxy.ativo && c.proxy.host) {
-    const login = c.proxy.usuario ? `${encodeURIComponent(c.proxy.usuario)}${s.senhaProxy ? ':' + encodeURIComponent(s.senhaProxy) : ''}@` : ''
-    a.push('--proxy', `${c.proxy.tipo === 'socks5' ? 'socks5' : 'http'}://${login}${c.proxy.host}${c.proxy.porta ? ':' + c.proxy.porta : ''}`)
-  }
-  return a
+/** Cookies, login e proxy: os mesmos dos vídeos, com as mesmas regras (sites sem cookies, login só nos sites listados). */
+function acessoPara(url: string): Acesso {
+  return prepararAcesso('gallery-dl', configuracoes(), obterSegredos(), url)
+}
+
+/** As imagens que a prévia da galeria pode mostrar do disco: as últimas baixadas de cada item. */
+export function ehAmostra(caminho: string): boolean {
+  return itens.some((i) => i.amostras.includes(caminho) || i.ultimoArquivo === caminho)
+}
+
+/** Pastas de destino da galeria (para "Abrir a pasta"). */
+export function pastasDaGaleria(): string[] {
+  return itens.map((i) => i.pasta)
 }
 
 /**
@@ -137,9 +136,9 @@ function argsAcesso(): string[] {
 const PASTA_PERFIL =
   '{username|user[account]|user[name]|author[handle]|author[name]|owner[username]|blog_name|blog[name]|subreddit|uploader|search_tags|category}'
 
-function argumentos(item: ItemGaleria): string[] {
+function argumentos(item: ItemGaleria, acesso: string[]): string[] {
   const c = configuracoes()
-  const a = ['--no-colors', '-d', item.pasta, ...argsAcesso()]
+  const a = ['--no-colors', '-d', item.pasta, ...acesso]
   // Padrão do gallery-dl: site/perfil/…; os outros trocam a lista de subpastas
   const subpastas = {
     plana: [],
@@ -160,8 +159,9 @@ function argumentos(item: ItemGaleria): string[] {
 function iniciar(id: string) {
   const item = itens.find((i) => i.id === id)
   if (!item || processos.has(id)) return
-  const args = argumentos(item)
-  logar('comando', `gallery-dl ${args.map((a, i) => (args[i - 1] === '-p' ? '••••' : /\s/.test(a) ? `"${a}"` : a)).join(' ')}`, id)
+  const acesso = acessoPara(item.url)
+  const args = argumentos(item, acesso.args)
+  logar('comando', `gallery-dl ${mascararArgs(args)}`, id)
   definir(id, { status: 'baixando', erro: null, dicaErro: null, falhas: 0 })
 
   const proc = executar('gallery-dl.exe', args)
@@ -174,6 +174,8 @@ function iniciar(id: string) {
     if (!atual || !linha.trim()) return
     const pulado = linha.startsWith('# ')
     const arquivo = (pulado ? linha.slice(2) : linha).trim()
+    // Só conta (e mostra na prévia) o que está dentro da pasta de destino
+    if (!dentroDaPasta(arquivo, atual.pasta)) return logar('info', linha, id)
     // Guarda as últimas imagens para o mosaico (vídeos ficam de fora)
     const amostras = EXTENSOES_IMAGEM.test(arquivo) ? [...atual.amostras.filter((a) => a !== arquivo), arquivo].slice(-4) : atual.amostras
     if (pulado) definir(id, { pulados: atual.pulados + 1, ultimoArquivo: arquivo, amostras }, false)
@@ -197,6 +199,7 @@ function iniciar(id: string) {
 
   proc.on('close', (codigo) => {
     processos.delete(id)
+    acesso.fim()
     const atual = itens.find((i) => i.id === id)
     if (atual && atual.status !== 'pausado') {
       // gallery-dl usa códigos por tipo de falha; parcial (alguns arquivos falharam) ainda conta como concluído
@@ -217,6 +220,7 @@ function iniciar(id: string) {
   })
   proc.on('error', (e) => {
     processos.delete(id)
+    acesso.fim()
     definir(id, { status: 'erro', erro: `Não foi possível iniciar o gallery-dl: ${e.message}` })
     agendar()
   })
@@ -224,7 +228,7 @@ function iniciar(id: string) {
 
 function encerrar(id: string) {
   const proc = processos.get(id)
-  if (proc?.pid) execFile('taskkill', ['/pid', String(proc.pid), '/T', '/F'], { windowsHide: true }, () => {})
+  if (proc?.pid) execFile(programaDoSistema('taskkill.exe'), ['/pid', String(proc.pid), '/T', '/F'], { windowsHide: true }, () => {})
 }
 
 export function pausarGaleria(id: string): void {
@@ -268,9 +272,10 @@ export function encerrarGaleria(): void {
 
 /** Lista os arquivos de `inicio` em diante (posições do --range). `fim` = não há mais. */
 export async function listarArquivosGaleria(url: string, inicio: number, quantidade: number): Promise<{ arquivos: ArquivoGaleria[]; fim: boolean }> {
-  const args = ['--no-colors', '-J', '--range', `${inicio}-${inicio + quantidade - 1}`, ...argsAcesso(), '--', url]
-  logar('comando', `gallery-dl ${args.map((a, i) => (args[i - 1] === '-p' ? '••••' : /\s/.test(a) ? `"${a}"` : a)).join(' ')}`)
-  const { stdout, stderr, codigo } = await executarAteFim('gallery-dl.exe', args, 180_000)
+  const acesso = acessoPara(url)
+  const args = ['--no-colors', '-J', '--range', `${inicio}-${inicio + quantidade - 1}`, ...acesso.args, '--', url]
+  logar('comando', `gallery-dl ${mascararArgs(args)}`)
+  const { stdout, stderr, codigo } = await executarAteFim('gallery-dl.exe', args, 180_000).finally(acesso.fim)
   const erro = stderr.split(/\r?\n/).filter((l) => /\[error\]/i.test(l)).pop()
   let mensagens: unknown[] = []
   try {

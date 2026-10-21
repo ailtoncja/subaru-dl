@@ -1,8 +1,9 @@
 import { app } from 'electron'
 import { execFile, spawn, type SpawnOptions } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { copyFileSync, createWriteStream, existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { Readable } from 'node:stream'
+import { Readable, Transform } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import type { EstadoFerramenta, NomeFerramenta } from '@shared/tipos'
 import { pastaDados } from './armazenamento'
@@ -139,21 +140,45 @@ export async function verificarVersoes(): Promise<EstadoFerramenta[]> {
 
 // ---------- Atualizações ----------
 
-async function baixarArquivo(url: string, destino: string) {
-  const resp = await fetch(url, { headers: { 'User-Agent': 'subaru-dl' } })
-  if (!resp.ok || !resp.body) throw new Error(`HTTP ${resp.status} ao baixar ${url}`)
-  await pipeline(Readable.fromWeb(resp.body as never), createWriteStream(destino))
+/** O aria2 não publica versões desde a 1.37.0 (2023) nem a soma dos arquivos: ela fica fixada aqui. */
+const ARIA2 = {
+  url: 'https://github.com/aria2/aria2/releases/download/release-1.37.0/aria2-1.37.0-win-64bit-build1.zip',
+  sha256: '67d015301eef0b612191212d564c5bb0a14b5b9c4796b76454276a4d28d9b288'
 }
 
-async function urlUltimoAsset(repo: string, padrao: RegExp): Promise<string> {
-  const resp = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
+/** Baixa e confere a soma SHA-256 enquanto grava; se não bater, apaga e recusa. */
+async function baixarArquivo(url: string, destino: string, sha256: string) {
+  const resp = await fetch(url, { headers: { 'User-Agent': 'subaru-dl' } })
+  if (!resp.ok || !resp.body) throw new Error(`HTTP ${resp.status} ao baixar ${url}`)
+  const hash = createHash('sha256')
+  const contar = new Transform({
+    transform(pedaco, _cod, pronto) {
+      hash.update(pedaco)
+      pronto(null, pedaco)
+    }
+  })
+  await pipeline(Readable.fromWeb(resp.body as never), contar, createWriteStream(destino))
+  const obtido = hash.digest('hex')
+  if (obtido !== sha256.toLowerCase()) {
+    rmSync(destino, { force: true })
+    throw new Error(`O arquivo baixado não confere com a soma publicada (${url}). Nada foi trocado.`)
+  }
+}
+
+/** Um arquivo da versão do GitHub com a soma SHA-256 que o próprio GitHub calculou ao publicar. */
+async function assetDoGithub(repo: string, versao: string, padrao: RegExp): Promise<{ url: string; sha256: string }> {
+  const caminho = versao === 'latest' ? 'releases/latest' : `releases/tags/${versao}`
+  const resp = await fetch(`https://api.github.com/repos/${repo}/${caminho}`, {
     headers: { 'User-Agent': 'subaru-dl', Accept: 'application/vnd.github+json' }
   })
   if (!resp.ok) throw new Error(`GitHub respondeu ${resp.status}`)
-  const release = (await resp.json()) as { assets: { name: string; browser_download_url: string }[] }
+  const release = (await resp.json()) as { assets: { name: string; browser_download_url: string; digest?: string | null }[] }
   const asset = release.assets.find((a) => padrao.test(a.name))
   if (!asset) throw new Error(`Arquivo não encontrado na última versão de ${repo}`)
-  return asset.browser_download_url
+  const sha256 = asset.digest?.match(/^sha256:([0-9a-f]{64})$/i)?.[1]
+  if (!sha256) throw new Error(`A versão de ${repo} não tem soma para conferir; a atualização foi cancelada.`)
+  if (!asset.browser_download_url.startsWith(`https://github.com/${repo}/releases/download/`)) throw new Error('Endereço de download inesperado.')
+  return { url: asset.browser_download_url, sha256 }
 }
 
 function acharArquivo(dir: string, nome: string): string | null {
@@ -167,11 +192,11 @@ function acharArquivo(dir: string, nome: string): string | null {
   return null
 }
 
-async function instalarDeZip(url: string, arquivos: string[]) {
+async function instalarDeZip({ url, sha256 }: { url: string; sha256: string }, arquivos: string[]) {
   const temp = pastaDados('temp', `zip-${Date.now()}`)
   try {
     const zip = join(temp, 'pacote.zip')
-    await baixarArquivo(url, zip)
+    await baixarArquivo(url, zip, sha256)
     const extraido = join(temp, 'x')
     mkdirSync(extraido)
     const tar = join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'tar.exe')
@@ -201,15 +226,13 @@ function substituir(origem: string, destino: string) {
 async function atualizarPorDownload(nome: NomeFerramenta) {
   switch (nome) {
     case 'ffmpeg':
-      return instalarDeZip(
-        'https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip',
-        ARQUIVOS.ffmpeg
-      )
+      return instalarDeZip(await assetDoGithub('yt-dlp/FFmpeg-Builds', 'latest', /^ffmpeg-master-latest-win64-gpl\.zip$/), ARQUIVOS.ffmpeg)
     case 'aria2':
-      return instalarDeZip(await urlUltimoAsset('aria2/aria2', /win-64bit.*\.zip$/), ARQUIVOS.aria2)
+      return instalarDeZip(ARIA2, ARQUIVOS.aria2)
     case 'gallery-dl': {
       const temp = join(pastaDados('temp'), 'gallery-dl.exe')
-      await baixarArquivo(await urlUltimoAsset('gdl-org/builds', /^gallery-dl_windows\.exe$/), temp)
+      const { url, sha256 } = await assetDoGithub('gdl-org/builds', 'latest', /^gallery-dl_windows\.exe$/)
+      await baixarArquivo(url, temp, sha256)
       return substituir(temp, exe('gallery-dl.exe'))
     }
     default:

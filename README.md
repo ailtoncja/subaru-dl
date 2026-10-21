@@ -64,11 +64,36 @@ O programa usa o electron-updater e procura as versões publicadas neste reposit
 Para lançar uma versão nova:
 
 1. Suba a versão no `package.json` (ex.: `0.8.1`) e faça o commit.
-2. Rode `npm run publicar` (precisa do GitHub CLI logado, ou da variável `GH_TOKEN`).
+2. Rode `npm run publicar` (precisa do GitHub CLI logado e da chave de assinatura, abaixo).
 
-Isso sobe o instalador, o `.blockmap` e o `latest.yml` como rascunho da versão `v<versão>` em Releases e, quando os
-três chegaram, publica. Quem tem o programa instalado recebe a versão nova sozinho.
+Isso sobe o instalador, o `.blockmap`, o `latest.yml` e a assinatura `.sig` como rascunho da versão `v<versão>` em
+Releases e, quando tudo chegou, publica. Quem tem o programa instalado recebe a versão nova sozinho.
+
+**Assinatura das versões (desde a 0.9.0).** O instalador não tem certificado do Windows, então cada versão leva um
+`Subaru-DL-Setup-<versão>.exe.sig`: uma assinatura Ed25519 do nome, da versão e da soma SHA-512 do instalador. O
+programa instalado confere essa assinatura com a chave pública embutida (`src/main/atualizador.ts`) antes de oferecer
+a versão; sem ela, a versão é recusada e apagada. Assim, quem conseguir publicar no GitHub (conta ou token vazado)
+não consegue fazer os programas instalarem nada. A chave privada fica **fora do repositório**, em
+`%USERPROFILE%\.subaru-dl\chave-atualizacao.pem` (ou no caminho da variável `SUBARU_CHAVE_ATUALIZACAO`).
+**Guarde uma cópia em lugar seguro**: sem ela não dá para lançar versões que os programas instalados aceitem.
+
+As ferramentas embutidas (e as atualizações delas pelo programa) são conferidas pela soma SHA-256 que o GitHub
+publica de cada arquivo; o aria2, sem versões novas desde 2023, tem a soma fixada no código.
 
 Para testar em desenvolvimento sem mexer no programa instalado: crie um `dev-app-update.yml` na raiz do projeto com
-`provider: github`, `owner: ailtoncja` e `repo: subaru-dl`, baixe a versão do `package.json` para uma menor que a
-publicada e abra com `SUBARU_TESTAR_ATUALIZACAO=1 npx electron-vite dev`.
+`provider: github`, `owner: ailtoncja`, `repo: subaru-dl` e `publisherName: [Subaru DL]`, baixe a versão do
+`package.json` para uma menor que a publicada e abra com `SUBARU_TESTAR_ATUALIZACAO=1 npx electron-vite dev`.
+
+## Segurança
+
+- A interface só fala com o motor pela janela do próprio programa, e o motor confere tudo o que chega: pastas e
+  arquivos só os escolhidos na janela do Windows, opções que rodam programas (`--exec`, `--downloader`…) recusadas
+  nos argumentos extras, e só arquivos baixados podem ser abertos.
+- Senhas, token e cabeçalhos ficam no cofre do Windows, nunca voltam para a interface e só vão para os sites listados
+  em "Sites onde usar o login", por um arquivo temporário (não pela linha de comando).
+- Os cookies do programa ficam cifrados; o yt-dlp e o gallery-dl recebem uma cópia temporária apagada no fim. O
+  cookies.txt exportado por extensão vai para a Lixeira depois de importado.
+- Envio de cookies ao celular: só para endereços da rede local, só os dos sites de vídeo e imagem, com o código de 16
+  letras do app do celular (1.6.0 ou mais novo).
+- Capas e miniaturas passam pelo motor (nunca carregadas direto pela interface), só de endereços públicos e com limite
+  de tamanho. Sem ferramentas de desenvolvedor no programa instalado.

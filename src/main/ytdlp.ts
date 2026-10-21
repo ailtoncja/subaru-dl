@@ -1,12 +1,24 @@
 // Monta os argumentos do yt-dlp a partir das opções da interface e lê as informações dos links.
+import { randomBytes } from 'node:crypto'
 import type { Capitulo, Configuracoes, EntradaPlaylist, Formato, InfoMidia, ItemFila, OpcoesDownload, Segredos } from '@shared/tipos'
+import { prepararAcesso } from './acesso'
 import { executarAteFim, pastaBin } from './ferramentas'
-import { logar } from './logs'
+import { logar, mascararArgs } from './logs'
 
-/** Marcadores que o motor procura na saída do yt-dlp. */
-export const MARCA_PROGRESSO = 'SUBARU_P '
-export const MARCA_POS = 'SUBARU_PP '
-export const MARCA_ARQUIVO = 'SUBARU_ARQ '
+export interface Marcas {
+  progresso: string
+  pos: string
+  arquivo: string
+}
+
+/**
+ * Marcadores que o motor procura na saída do yt-dlp, com um código novo a cada execução: um título de
+ * vídeo ou playlist (que o yt-dlp também imprime) não consegue se passar por eles.
+ */
+export function novasMarcas(): Marcas {
+  const n = randomBytes(8).toString('hex')
+  return { progresso: `SUBARU_P_${n} `, pos: `SUBARU_PP_${n} `, arquivo: `SUBARU_ARQ_${n} ` }
+}
 
 /** Divide uma linha de argumentos respeitando aspas: `-x "a b"` → ['-x', 'a b'] */
 export function dividirArgs(texto: string): string[] {
@@ -21,51 +33,11 @@ function linhas(texto: string): string[] {
   return texto.split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith('#'))
 }
 
-function hostDe(url: string): string {
-  try {
-    return new URL(url).hostname.toLowerCase()
-  } catch {
-    return ''
-  }
-}
+// ---------- Rede (usado tanto para ler informações quanto para baixar) ----------
+// Cookies, login e proxy ficam em acesso.ts: vão num arquivo temporário, só para os sites certos.
 
-// ---------- Rede, login e cookies (usado tanto para ler informações quanto para baixar) ----------
-
-export function argsRede(c: Configuracoes, s: Segredos, url: string, extrasExtrator: string[] = []): string[] {
+export function argsRede(c: Configuracoes, extrasExtrator: string[] = []): string[] {
   const a: string[] = []
-
-  // Cookies (itens 58, 59, 60)
-  const host = hostDe(url)
-  const ignorar = c.cookies.ignorarSites.some((p) => {
-    const padrao = p.trim().toLowerCase().replace(/^\*\./, '')
-    return padrao && (host === padrao || host.endsWith('.' + padrao))
-  })
-  if (!ignorar) {
-    if (c.cookies.origem === 'navegador' && c.cookies.navegador !== 'nenhum') {
-      a.push('--cookies-from-browser', c.cookies.navegador + (c.cookies.perfil ? `:${c.cookies.perfil}` : ''))
-    } else if (c.cookies.origem === 'arquivo' && c.cookies.arquivo) {
-      a.push('--cookies', c.cookies.arquivo)
-    }
-  }
-
-  // Login e cabeçalhos (item 61)
-  if (s.usuario) a.push('--username', s.usuario)
-  if (s.senha) a.push('--password', s.senha)
-  if (s.senhaVideo) a.push('--video-password', s.senhaVideo)
-  if (s.token) a.push('--add-headers', `Authorization:Bearer ${s.token}`)
-  for (const linha of linhas(s.cabecalhos)) {
-    const i = linha.indexOf(':')
-    if (i > 0) a.push('--add-headers', `${linha.slice(0, i).trim()}:${linha.slice(i + 1).trim()}`)
-  }
-
-  // Proxy (item 62)
-  if (c.proxy.ativo && c.proxy.host) {
-    const esquema = c.proxy.tipo === 'socks5' ? 'socks5' : 'http'
-    const login = c.proxy.usuario
-      ? `${encodeURIComponent(c.proxy.usuario)}${s.senhaProxy ? ':' + encodeURIComponent(s.senhaProxy) : ''}@`
-      : ''
-    a.push('--proxy', `${esquema}://${login}${c.proxy.host}${c.proxy.porta ? ':' + c.proxy.porta : ''}`)
-  }
 
   // Se passar por um navegador (item 63)
   if (c.impersonar) a.push('--impersonate', c.impersonar === 'qualquer' ? '' : c.impersonar)
@@ -199,7 +171,8 @@ export function pastaDoItem(item: ItemFila, c: Configuracoes): string {
   return o.pasta ?? (o.modo === 'audio' ? c.pastaAudio : c.pastaVideo)
 }
 
-export function argsDownload(item: ItemFila, c: Configuracoes, s: Segredos): string[] {
+/** `acesso` são os argumentos de cookies, login e proxy (prepararAcesso), `marcas` os marcadores desta execução. */
+export function argsDownload(item: ItemFila, c: Configuracoes, acesso: string[], marcas: Marcas): string[] {
   const o = item.opcoes
   const info = item.info
   const ehPlaylist = !!info?.playlist
@@ -211,11 +184,11 @@ export function argsDownload(item: ItemFila, c: Configuracoes, s: Segredos): str
     '--no-quiet',
     '--no-mtime',
     '--progress-template',
-    `download:${MARCA_PROGRESSO}%(progress.status)s|%(progress.downloaded_bytes)s|%(progress.total_bytes)s|%(progress.total_bytes_estimate)s|%(progress.speed)s|%(progress.eta)s|%(info.playlist_index)s|%(info.n_entries)s|%(info.vcodec)s|%(progress.fragment_index)s|%(progress.fragment_count)s`,
+    `download:${marcas.progresso}%(progress.status)s|%(progress.downloaded_bytes)s|%(progress.total_bytes)s|%(progress.total_bytes_estimate)s|%(progress.speed)s|%(progress.eta)s|%(info.playlist_index)s|%(info.n_entries)s|%(info.vcodec)s|%(progress.fragment_index)s|%(progress.fragment_count)s`,
     '--progress-template',
-    `postprocess:${MARCA_POS}%(progress.status)s|%(progress.postprocessor)s|%(info.playlist_index)s`,
+    `postprocess:${marcas.pos}%(progress.status)s|%(progress.postprocessor)s|%(info.playlist_index)s`,
     '--print',
-    `after_move:${MARCA_ARQUIVO}%(.{id,title,channel,uploader,extractor_key,webpage_url,duration,height,fps,abr,ext,filepath,thumbnail,upload_date,playlist_title,view_count,like_count})j`,
+    `after_move:${marcas.arquivo}%(.{id,title,channel,uploader,extractor_key,webpage_url,duration,height,fps,abr,ext,filepath,thumbnail,upload_date,playlist_title,view_count,like_count})j`,
     '-P',
     `home:${pasta}`,
     '-o',
@@ -309,21 +282,15 @@ export function argsDownload(item: ItemFila, c: Configuracoes, s: Segredos): str
     const clientes = ['tv', 'web_safari', 'mweb']
     extras.push(`youtube:player_client=${clientes[(item.tentativa - 1) % clientes.length]}`)
   }
-  a.push(...argsRede(c, s, item.url, extras))
+  a.push(...argsRede(c, extras), ...acesso)
   if (c.argsExtras.trim()) a.push(...dividirArgs(c.argsExtras))
   a.push('--', item.url)
   return a
 }
 
-/** Esconde senhas e tokens antes de mostrar o comando nos logs. */
+/** O comando para o Registro, sem senhas, tokens nem login de proxy. */
 export function comandoParaLog(args: string[]): string {
-  const sensiveis = new Set(['--password', '--video-password', '--add-headers', '--proxy', '--username'])
-  return (
-    'yt-dlp ' +
-    args
-      .map((arg, i) => (sensiveis.has(args[i - 1]) ? '••••' : /\s|"/.test(arg) ? `"${arg.replaceAll('"', '\\"')}"` : arg))
-      .join(' ')
-  )
+  return 'yt-dlp ' + mascararArgs(args)
 }
 
 // ---------- Informações do link ----------
@@ -423,9 +390,10 @@ function lerInfo(d: any): InfoMidia {
 export class ErroYtdlp extends Error {}
 
 export async function buscarInfo(url: string, c: Configuracoes, s: Segredos, itemId: string | null): Promise<InfoMidia> {
-  const args = [...argsBase(c), '-J', '--flat-playlist', ...argsRede(c, s, url), '--', url]
+  const acesso = prepararAcesso('yt-dlp', c, s, url)
+  const args = [...argsBase(c), '-J', '--flat-playlist', ...argsRede(c), ...acesso.args, '--', url]
   logar('comando', comandoParaLog(args), itemId)
-  const { stdout, stderr, codigo } = await executarAteFim('yt-dlp.exe', args, 180_000)
+  const { stdout, stderr, codigo } = await executarAteFim('yt-dlp.exe', args, 180_000).finally(acesso.fim)
   for (const linha of stderr.split(/\r?\n/)) {
     if (linha.startsWith('WARNING')) logar('aviso', linha, itemId)
   }

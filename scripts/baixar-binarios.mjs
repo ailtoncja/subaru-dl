@@ -2,30 +2,48 @@
 // Uso: npm run binarios            (só baixa o que estiver faltando)
 //      npm run binarios -- --forcar (baixa tudo de novo)
 import { execFileSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { createWriteStream, existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { Readable } from 'node:stream'
+import { Readable, Transform } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 
 const BIN = resolve('resources/bin')
 const TMP = resolve('resources/.tmp')
 const forcar = process.argv.includes('--forcar')
 
-async function baixar(url, destino) {
+// Cada arquivo é conferido pela soma SHA-256 publicada antes de entrar no instalador.
+async function baixar({ url, sha256 }, destino) {
   const resp = await fetch(url, { headers: { 'User-Agent': 'subaru-dl' } })
   if (!resp.ok) throw new Error(`HTTP ${resp.status} em ${url}`)
-  await pipeline(Readable.fromWeb(resp.body), createWriteStream(destino))
+  const hash = createHash('sha256')
+  const contar = new Transform({
+    transform(pedaco, _cod, pronto) {
+      hash.update(pedaco)
+      pronto(null, pedaco)
+    }
+  })
+  await pipeline(Readable.fromWeb(resp.body), contar, createWriteStream(destino))
+  const obtido = hash.digest('hex')
+  if (obtido !== sha256) {
+    rmSync(destino, { force: true })
+    throw new Error(`Soma SHA-256 não confere em ${url}: esperado ${sha256}, veio ${obtido}`)
+  }
 }
 
-async function ultimoAsset(repo, padrao) {
-  const resp = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
+/** Um arquivo da versão do GitHub, com a soma que o GitHub calculou ao publicar. */
+async function asset(repo, padrao, versao = 'latest') {
+  const caminho = versao === 'latest' ? 'releases/latest' : `releases/tags/${versao}`
+  const resp = await fetch(`https://api.github.com/repos/${repo}/${caminho}`, {
     headers: { 'User-Agent': 'subaru-dl', Accept: 'application/vnd.github+json' }
   })
   if (!resp.ok) throw new Error(`GitHub API ${resp.status} para ${repo}`)
   const release = await resp.json()
-  const asset = release.assets.find((a) => padrao.test(a.name))
-  if (!asset) throw new Error(`Nenhum arquivo de ${repo} bate com ${padrao}`)
-  return asset.browser_download_url
+  const achado = release.assets.find((a) => padrao.test(a.name))
+  if (!achado) throw new Error(`Nenhum arquivo de ${repo} bate com ${padrao}`)
+  const sha256 = achado.digest?.match(/^sha256:([0-9a-f]{64})$/i)?.[1]?.toLowerCase()
+  if (!sha256) throw new Error(`${repo} não tem soma SHA-256 para ${achado.name}`)
+  return { url: achado.browser_download_url, sha256 }
 }
 
 // Extrai o zip e move para BIN os arquivos pedidos, onde quer que estejam dentro dele.
@@ -58,32 +76,35 @@ const ferramentas = [
   {
     nome: 'yt-dlp',
     arquivos: ['yt-dlp.exe'],
-    url: async () => 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe'
+    url: () => asset('yt-dlp/yt-dlp', /^yt-dlp\.exe$/)
   },
   {
     nome: 'Deno',
     arquivos: ['deno.exe'],
     zip: true,
-    url: async () => 'https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip'
+    url: () => asset('denoland/deno', /^deno-x86_64-pc-windows-msvc\.zip$/)
   },
   {
     nome: 'ffmpeg + ffprobe',
     arquivos: ['ffmpeg.exe', 'ffprobe.exe'],
     zip: true,
-    url: async () =>
-      'https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip'
+    url: () => asset('yt-dlp/FFmpeg-Builds', /^ffmpeg-master-latest-win64-gpl\.zip$/, 'latest')
   },
   {
     nome: 'gallery-dl',
     arquivos: ['gallery-dl.exe'],
     // O gallery-dl publica os executáveis em um repositório separado.
-    url: () => ultimoAsset('gdl-org/builds', /^gallery-dl_windows\.exe$/)
+    url: () => asset('gdl-org/builds', /^gallery-dl_windows\.exe$/)
   },
   {
     nome: 'aria2',
     arquivos: ['aria2c.exe'],
     zip: true,
-    url: () => ultimoAsset('aria2/aria2', /win-64bit.*\.zip$/)
+    // Sem versões novas desde 2023 e sem soma publicada: fixada (a mesma de src/main/ferramentas.ts)
+    url: async () => ({
+      url: 'https://github.com/aria2/aria2/releases/download/release-1.37.0/aria2-1.37.0-win-64bit-build1.zip',
+      sha256: '67d015301eef0b612191212d564c5bb0a14b5b9c4796b76454276a4d28d9b288'
+    })
   }
 ]
 
@@ -95,14 +116,14 @@ for (const f of ferramentas) {
     console.log(`✓ ${f.nome} já está em resources/bin`)
     continue
   }
-  const url = await f.url()
-  console.log(`↓ ${f.nome}: ${url}`)
+  const fonte = await f.url()
+  console.log(`↓ ${f.nome}: ${fonte.url}`)
   if (f.zip) {
     const zip = join(TMP, 'download.zip')
-    await baixar(url, zip)
+    await baixar(fonte, zip)
     extrairDoZip(zip, f.arquivos)
   } else {
-    await baixar(url, join(BIN, f.arquivos[0]))
+    await baixar(fonte, join(BIN, f.arquivos[0]))
   }
   console.log(`✓ ${f.nome} pronto`)
 }

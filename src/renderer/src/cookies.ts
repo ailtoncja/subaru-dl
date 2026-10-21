@@ -63,7 +63,9 @@ export function useCookies() {
       const nome = caminho.split(/[\\/]/).pop()
       setResultado({
         ok: true,
-        texto: `${r.salvos} cookies de ${r.sites} sites importados${achadoSozinho ? ` (achei "${nome}" na pasta Downloads)` : ''}. O programa já está usando esse arquivo.`
+        texto:
+          `${r.salvos} cookies de ${r.sites} sites importados${achadoSozinho ? ` (achei "${nome}" na pasta Downloads)` : ''}. O programa já está usando, guardados cifrados.` +
+          (r.paraLixeira ? ' O arquivo exportado foi para a Lixeira, porque tinha os logins em texto puro.' : '')
       })
     } else {
       setResultado({ ok: false, texto: r.erro ?? 'Não consegui importar o cookies.txt.' })
