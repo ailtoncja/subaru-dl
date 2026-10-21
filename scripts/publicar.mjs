@@ -13,6 +13,9 @@ if (!process.env.GH_TOKEN) process.env.GH_TOKEN = execSync('gh auth token').toSt
 
 rodar('npm run binarios')
 rodar('npx electron-vite build')
+// O rascunho já existe antes dos envios: sem isso cada envio paralelo cria a sua versão e os arquivos se dividem
+// em duas (aconteceu na 0.8.1)
+rodar(`gh release create v${version} --repo ailtoncja/subaru-dl --draft --title ${version} --target main --notes ""`)
 rodar('npx electron-builder --win --publish always')
 rodar(`gh release edit v${version} --repo ailtoncja/subaru-dl --draft=false --latest`)
 console.log(`\nVersão ${version} publicada: https://github.com/ailtoncja/subaru-dl/releases/tag/v${version}`)
