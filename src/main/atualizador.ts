@@ -1,11 +1,50 @@
 // Atualização do próprio programa: procura versões novas nas versões publicadas no GitHub (ailtoncja/subaru-dl),
 // baixa em segundo plano e avisa quando estiver pronta. Instala ao clicar em "Reiniciar" ou ao fechar o programa.
-import { app } from 'electron'
-import { autoUpdater } from 'electron-updater'
-import { existsSync } from 'node:fs'
+import { app, net } from 'electron'
+import { autoUpdater, type NsisUpdater } from 'electron-updater'
+import { createHash, createPublicKey, verify } from 'node:crypto'
+import { createReadStream, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import type { EstadoAtualizacao } from '@shared/tipos'
 import * as logs from './logs'
+
+/**
+ * Chave pública das versões do Subaru DL. Cada instalador publicado leva um .sig feito com a chave privada,
+ * que fica só no computador do autor (fora do GitHub). Assim, quem conseguir publicar no GitHub sem essa
+ * chave não consegue fazer o programa instalar nada: a versão é recusada antes de rodar.
+ */
+const CHAVE_PUBLICA = createPublicKey(`-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEAfJvABXFJKeJBL+FCRxriHYBiE1E4DtxfPuUhcNrBLis=
+-----END PUBLIC KEY-----`)
+const ORIGEM = 'https://github.com/ailtoncja/subaru-dl/releases/download'
+
+/** O que é assinado: o nome, a versão e a soma SHA-512 do instalador (o mesmo cálculo de scripts/publicar.mjs). */
+export const mensagemAssinada = (versao: string, sha512: string) => `Subaru DL ${versao}\n${sha512}`
+
+function sha512DoArquivo(arquivo: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const hash = createHash('sha512')
+    createReadStream(arquivo)
+      .on('data', (d) => hash.update(d))
+      .on('error', reject)
+      .on('end', () => resolve(hash.digest('hex')))
+  })
+}
+
+/** null = assinatura válida; texto = motivo da recusa (o electron-updater apaga o arquivo e não instala). */
+async function verificarAssinatura(arquivo: string): Promise<string | null> {
+  const versao = estado.versao
+  if (!versao || !/^[\d.]+(-[\w.]+)?$/.test(versao)) return 'versão desconhecida'
+  try {
+    const resp = await net.fetch(`${ORIGEM}/v${versao}/Subaru-DL-Setup-${versao}.exe.sig`, { signal: AbortSignal.timeout(30_000) })
+    if (!resp.ok) return `assinatura da versão ${versao} não encontrada (HTTP ${resp.status})`
+    const assinatura = Buffer.from((await resp.text()).trim(), 'base64')
+    const ok = verify(null, Buffer.from(mensagemAssinada(versao, await sha512DoArquivo(arquivo))), CHAVE_PUBLICA, assinatura)
+    return ok ? null : `a assinatura da versão ${versao} não confere`
+  } catch (e) {
+    return `não foi possível conferir a assinatura: ${e instanceof Error ? e.message : String(e)}`
+  }
+}
 
 /** De quanto em quanto tempo procurar de novo (o programa pode ficar dias aberto na bandeja). */
 const INTERVALO_MS = 6 * 60 * 60 * 1000
@@ -44,6 +83,13 @@ export function prepararAtualizador(ligado: () => boolean, aoMudar: (e: EstadoAt
   autoUpdater.autoDownload = true
   autoUpdater.autoInstallOnAppQuit = true
   if (testeEmDesenvolvimento()) autoUpdater.forceDevUpdateConfig = true
+  // Antes de oferecer a versão baixada: confere a assinatura do autor (veja CHAVE_PUBLICA)
+  ;(autoUpdater as NsisUpdater).verifyUpdateCodeSignature = async (_publicadores, arquivo) => {
+    const motivo = await verificarAssinatura(arquivo)
+    if (motivo) logs.logar('erro', `Atualização recusada: ${motivo}`)
+    else logs.logar('info', `Atualização ${estado.versao}: assinatura conferida`)
+    return motivo
+  }
   autoUpdater.logger = {
     info: (m: unknown) => logs.logar('info', `Atualização: ${String(m)}`),
     warn: (m: unknown) => logs.logar('aviso', `Atualização: ${String(m)}`),

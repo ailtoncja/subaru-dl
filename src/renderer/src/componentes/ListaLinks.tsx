@@ -2,8 +2,12 @@
 // Usada logo abaixo do campo, no modo vídeo/áudio e no modo imagens.
 import { ChevronDown, ChevronUp, ClipboardPaste, FileText, FolderOpen, Loader2, X } from 'lucide-react'
 import { type ReactNode } from 'react'
+import { capaRemota, ESQUEMA_MINIATURA } from '@shared/miniatura'
 import { avisar, extrairLinks } from '../estado'
 import { pastaCurta } from './Destino'
+
+/** A capa da linha: a da galeria já vem pelo motor; a de um vídeo passa por ele agora. */
+const miniatura = (url: string | null | undefined) => (url?.startsWith(`${ESQUEMA_MINIATURA}:`) ? url : capaRemota(url))
 
 export interface LinhaLink {
   url: string
@@ -78,7 +82,7 @@ export function ListaLinks<T extends LinhaLink>({
             <div key={l.url} className={`linha-link${l.aberto ? ' aberta' : ''}`}>
               <div className="cabeca-link">
                 <span className="num">{i + 1}</span>
-                <div className="mini" style={d.miniatura ? { backgroundImage: `url("${d.miniatura}")` } : undefined}>
+                <div className="mini" style={miniatura(d.miniatura) ? { backgroundImage: `url("${miniatura(d.miniatura)}")` } : undefined}>
                   {d.carregando && <Loader2 className="girando" />}
                 </div>
                 <div className="texto">

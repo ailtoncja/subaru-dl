@@ -245,6 +245,8 @@ export interface Configuracoes {
     arquivo: string
     ignorarSites: string[]
   }
+  /** Sites onde o usuário, a senha, o token e os cabeçalhos são usados (ex.: vimeo.com). Vazio: em nenhum. */
+  sitesLogin: string[]
   proxy: { ativo: boolean; tipo: 'http' | 'socks5'; host: string; porta: string; usuario: string }
   impersonar: string
   extractorArgs: string
@@ -281,6 +283,15 @@ export interface Segredos {
   token: string
   cabecalhos: string
   senhaProxy: string
+}
+
+/**
+ * O que a interface vê dos segredos: o usuário e quais campos estão preenchidos. Senhas, token e cabeçalhos
+ * nunca voltam para a interface; ela só pode trocá-los.
+ */
+export interface SegredosVisiveis {
+  usuario: string
+  preenchidos: Record<Exclude<keyof Segredos, 'usuario'>, boolean>
 }
 
 /** Um arquivo baixado (aparece em Downloads → Concluídos e detecta duplicados). */
@@ -320,6 +331,8 @@ export interface ResultadoCookies {
   sites: number
   arquivo: string
   erro: string | null
+  /** O cookies.txt importado da pasta Downloads foi para a Lixeira (tinha os logins em texto puro) */
+  paraLixeira?: boolean
 }
 
 /** Celular com o Subaru DL na tela "Receber do PC", achado na rede local. */

@@ -20,6 +20,7 @@ import { Fragment, useEffect, useMemo, useState, type DragEvent, type ReactNode 
 import { createPortal } from 'react-dom'
 import { bytes, duracao, faixasParaEscolher, numeroCurto, tempoRelativo, tempoTotal } from '@shared/formatar'
 import { estimarTamanho, FORMATOS_AUDIO, BITRATES, QUALIDADES } from '@shared/formatos'
+import { capaRemota } from '@shared/miniatura'
 import type { Duplicado, InfoMidia, ItemLote, OpcoesDownload } from '@shared/tipos'
 import { CampoLinks } from '../componentes/CampoLinks'
 import { SelecaoLegenda } from '../componentes/SelecaoLegenda'
@@ -357,8 +358,8 @@ function CartaoPrevia({
 
   return (
     <div className="cartao previa">
-      <div className="capa" style={info.miniatura ? { backgroundImage: `url("${info.miniatura}")` } : undefined}>
-        {!info.miniatura && (
+      <div className="capa" style={capaRemota(info.miniatura) ? { backgroundImage: `url("${capaRemota(info.miniatura, 480)}")` } : undefined}>
+        {!capaRemota(info.miniatura) && (
           <div className="sem-capa" aria-hidden="true">
             {pl ? <ListVideo /> : audio ? <Music /> : <FilePlay />}
           </div>
@@ -607,7 +608,7 @@ function CartaoLote({
             <ListaPlaylist info={l.info} o={{ ...o, itensPlaylist: l.itensPlaylist }} mudar={(p) => p.itensPlaylist !== undefined && mudarLinha(i, { itensPlaylist: p.itensPlaylist })} />
           ) : l.info ? (
             <div className="flex" style={{ gap: 14, alignItems: 'flex-start' }}>
-              {l.info.miniatura && <div className="miniatura" style={{ backgroundImage: `url("${l.info.miniatura}")` }} />}
+              {capaRemota(l.info.miniatura) && <div className="miniatura" style={{ backgroundImage: `url("${capaRemota(l.info.miniatura)}")` }} />}
               <div className="flex-1" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <strong className="selecionavel">{l.info.titulo}</strong>
                 <span className="muted pequeno">

@@ -1,14 +1,17 @@
 // Gerenciador da fila: busca informações, controla quantos downloads rodam ao mesmo tempo,
 // pausa/retoma, tenta de novo quando falha e salva a fila em disco.
 import { execFile, type ChildProcess } from 'node:child_process'
+import { isAbsolute, resolve, sep } from 'node:path'
 import { createInterface } from 'node:readline'
 import type { Duplicado, InfoMidia, ItemFila, ItemLote, MidiaBaixada, OpcoesDownload, Progresso, StatusItem } from '@shared/tipos'
+import { prepararAcesso } from './acesso'
 import { gravadorAdiado, lerJson } from './armazenamento'
 import { configuracoes, obterSegredos } from './configuracoes'
+import { programaDoSistema } from './cookies'
 import { executar } from './ferramentas'
 import { procurarDuplicados, registrarDownload } from './historico'
 import { dicaParaErro, logar } from './logs'
-import { argsDownload, buscarInfo, comandoParaLog, MARCA_ARQUIVO, MARCA_POS, MARCA_PROGRESSO, nomeSite } from './ytdlp'
+import { argsDownload, buscarInfo, comandoParaLog, nomeSite, novasMarcas, pastaDoItem } from './ytdlp'
 
 const PROGRESSO_ZERO: Progresso = {
   porcentagem: 0,
@@ -287,7 +290,11 @@ function iniciarDownload(id: string) {
     definir(id, { status: 'erro', erro: 'Nenhum vídeo da playlist está marcado.', dicaErro: 'Abra as preferências do item → Playlist.' })
     return
   }
-  const args = argsDownload(alvo, configuracoes(), obterSegredos())
+  const c = configuracoes()
+  const marcas = novasMarcas()
+  const acesso = prepararAcesso('yt-dlp', c, obterSegredos(), alvo.url)
+  const args = argsDownload(alvo, c, acesso.args, marcas)
+  const pasta = pastaDoItem(alvo, c)
   logar('comando', comandoParaLog(args), id)
 
   const ehPlaylist = !!alvo.info?.playlist
@@ -306,10 +313,10 @@ function iniciarDownload(id: string) {
   const avisos: string[] = []
 
   createInterface({ input: proc.stdout! }).on('line', (linha) => {
-    if (linha.startsWith(MARCA_PROGRESSO)) return lerProgresso(id, linha.slice(MARCA_PROGRESSO.length))
-    if (linha.startsWith(MARCA_POS)) return lerPosProcesso(id, linha.slice(MARCA_POS.length))
-    if (linha.startsWith(MARCA_ARQUIVO)) {
-      const midia = lerMidia(linha.slice(MARCA_ARQUIVO.length))
+    if (linha.startsWith(marcas.progresso)) return lerProgresso(id, linha.slice(marcas.progresso.length))
+    if (linha.startsWith(marcas.pos)) return lerPosProcesso(id, linha.slice(marcas.pos.length))
+    if (linha.startsWith(marcas.arquivo)) {
+      const midia = lerMidia(linha.slice(marcas.arquivo.length), pasta)
       const atual = item(id)
       if (midia && atual && !atual.arquivos.includes(midia.arquivo)) {
         definir(id, { arquivos: [...atual.arquivos, midia.arquivo], midias: [...atual.midias, midia] })
@@ -334,6 +341,7 @@ function iniciarDownload(id: string) {
 
   proc.on('close', (codigo) => {
     processos.delete(id)
+    acesso.fim()
     const atual = item(id)
     if (!atual) return agendar()
     // Pausado pelo usuário: o processo foi encerrado de propósito
@@ -360,6 +368,7 @@ function iniciarDownload(id: string) {
 
   proc.on('error', (e) => {
     processos.delete(id)
+    acesso.fim()
     falhou(id, `Não foi possível iniciar o yt-dlp: ${e.message}`)
     agendar()
   })
@@ -398,11 +407,21 @@ function falhou(id: string, mensagem: string) {
   }
 }
 
+/** Um arquivo que o yt-dlp diz ter gravado só vale se estiver dentro da pasta de destino, no disco local. */
+export function dentroDaPasta(arquivo: unknown, pasta: string): arquivo is string {
+  if (typeof arquivo !== 'string' || !isAbsolute(arquivo) || /^[\\/]{2}/.test(arquivo)) return false
+  const base = resolve(pasta)
+  return resolve(arquivo).toLowerCase().startsWith((base.endsWith(sep) ? base : base + sep).toLowerCase())
+}
+
 /** Dados de um arquivo terminado, impressos pelo yt-dlp em JSON (veja argsDownload). */
-function lerMidia(json: string): MidiaBaixada | null {
+function lerMidia(json: string, pasta: string): MidiaBaixada | null {
   try {
     const d = JSON.parse(json)
-    if (!d.filepath) return null
+    if (!dentroDaPasta(d.filepath, pasta)) {
+      if (d.filepath) logar('aviso', `Arquivo fora da pasta de destino ignorado: ${String(d.filepath)}`)
+      return null
+    }
     return {
       idMidia: String(d.id ?? ''),
       titulo: d.title ?? '',
@@ -489,7 +508,7 @@ function lerPosProcesso(id: string, dados: string) {
 function encerrarProcesso(id: string) {
   const proc = processos.get(id)
   if (!proc?.pid) return
-  execFile('taskkill', ['/pid', String(proc.pid), '/T', '/F'], { windowsHide: true }, () => {})
+  execFile(programaDoSistema('taskkill.exe'), ['/pid', String(proc.pid), '/T', '/F'], { windowsHide: true }, () => {})
 }
 
 // ---------- Ações da interface ----------
@@ -580,7 +599,8 @@ export function dividirPlaylist(id: string): void {
   if (!atual || !entradas?.length) return
   const selecao = selecionados(atual.opcoes.itensPlaylist, entradas.length, atual.opcoes.limitePlaylist)
   const novos = entradas
-    .filter((e) => e.url && selecao.has(e.indice))
+    // O link de cada vídeo vem do site: só entra se for um endereço web comum
+    .filter((e) => /^https?:\/\/\S+$/i.test(e.url ?? '') && selecao.has(e.indice))
     .map((e) => novoItem(e.url, { ...atual.opcoes, itensPlaylist: '', limitePlaylist: 0 }))
   const i = itens.findIndex((x) => x.id === id)
   itens.splice(i, 1, ...novos)

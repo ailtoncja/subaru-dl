@@ -78,9 +78,18 @@ export function avisar(texto: string, tipo: Toast['tipo'] = 'info'): void {
   setTimeout(() => useEstado.setState((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), 4000)
 }
 
+/** O texto de um erro que veio do motor, sem o "Error invoking remote method…" do Electron. */
+export const erroDoMotor = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, '')
+
 export async function salvarConfig(parcial: Partial<Configuracoes>): Promise<void> {
-  const config = await window.api.salvarConfiguracoes(parcial)
-  useEstado.setState({ config })
+  try {
+    const config = await window.api.salvarConfiguracoes(parcial)
+    useEstado.setState({ config })
+  } catch (e) {
+    // O motor recusou (ex.: uma opção que roda programas nos argumentos extras): o campo volta ao que estava
+    avisar(erroDoMotor(e), 'erro')
+    useEstado.setState({ config: await window.api.obterConfiguracoes() })
+  }
 }
 
 /** Adiciona links à fila e abre o diálogo de duplicados quando preciso (item 8). */

@@ -26,6 +26,19 @@ win:
   target: nsis
   icon: build/icon.ico
   executableName: SubaruDL
+  # Com o nome do publicador no app-update.yml, o electron-updater chama a conferência de assinatura do
+  # programa (src/main/atualizador.ts), que usa a chave do autor (.sig) em vez de um certificado
+  signtoolOptions:
+    publisherName: Subaru DL
+# Trava recursos do Electron que o programa não usa e que serviriam para rodar outro código com ele
+electronFuses:
+  runAsNode: false
+  enableCookieEncryption: true
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+  # grantFileProtocolExtraPrivileges fica como está: sem ele a interface (file:// dentro do app.asar) não abre
 nsis:
   oneClick: false
   perMachine: false

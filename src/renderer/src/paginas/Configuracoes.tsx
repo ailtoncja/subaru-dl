@@ -1,6 +1,6 @@
 import { Cookie, Download, FolderOpen, RefreshCw, RotateCcw, Search, Send, Smartphone, Wand2, X } from 'lucide-react'
 import { Fragment, useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
-import type { CampoNome, CelularEncontrado, Configuracoes as TConfig, Navegador, OpcoesDownload, Segredos } from '@shared/tipos'
+import type { CampoNome, CelularEncontrado, Configuracoes as TConfig, Navegador, OpcoesDownload, Segredos, SegredosVisiveis } from '@shared/tipos'
 import { SelecaoOrganizar, SelecaoOrganizarGaleria } from '../componentes/Destino'
 import { EditorLegendas, EditorPosProcesso, EditorQualidade } from '../componentes/EditorOpcoes'
 import { Dialogo, Etiquetas, Interruptor, Linha, LinhaInterruptor, Selecao } from '../componentes/ui'
@@ -129,11 +129,55 @@ function CampoTexto({
   return multilinha ? <textarea {...props} spellCheck={false} /> : <input {...props} type={senha ? 'password' : 'text'} spellCheck={false} />
 }
 
+/**
+ * Campo de um segredo (senha, token, cabeçalhos): o valor guardado nunca volta para a tela. Mostra "guardado",
+ * troca quando a pessoa escreve algo novo e apaga pelo X.
+ */
+function CampoSegredo({
+  preenchido,
+  aoSalvar,
+  largura,
+  placeholder,
+  mono,
+  multilinha
+}: {
+  preenchido: boolean
+  aoSalvar: (v: string) => void
+  largura?: number | string
+  placeholder?: string
+  mono?: boolean
+  multilinha?: boolean
+}) {
+  const [texto, setTexto] = useState('')
+  const props = {
+    className: `campo${mono ? ' mono' : ''}`,
+    style: { width: multilinha ? '100%' : (largura ?? '100%') },
+    value: texto,
+    placeholder: preenchido ? '•••••• guardado (escreva para trocar)' : placeholder,
+    onChange: (e: { target: { value: string } }) => setTexto(e.target.value),
+    onBlur: () => {
+      if (!texto) return
+      aoSalvar(texto)
+      setTexto('')
+    }
+  }
+  return (
+    <div className="flex" style={{ gap: 6, width: multilinha ? '100%' : undefined, alignItems: 'flex-start' }}>
+      {multilinha ? <textarea {...props} spellCheck={false} /> : <input {...props} type="password" spellCheck={false} />}
+      {preenchido && (
+        <button className="icone-btn leve" title="Apagar o que está guardado" onClick={() => aoSalvar('')}>
+          <X />
+        </button>
+      )}
+    </div>
+  )
+}
+
 export default function Configuracoes() {
   const config = useEstado((s) => s.config)!
   const c = config
   const [busca, setBusca] = useState('')
-  const [segredos, setSegredos] = useState<Segredos | null>(null)
+  const [segredos, setSegredos] = useState<SegredosVisiveis | null>(null)
   const [perfis, setPerfis] = useState<string[]>([])
   const [alvos, setAlvos] = useState<string[]>([])
   const [atualizacao, setAtualizacao] = useState('')
@@ -183,15 +227,16 @@ export default function Configuracoes() {
 
   const mudarPadrao = (parcial: Partial<OpcoesDownload>) => salvarConfig({ padrao: { ...c.padrao, ...parcial } })
   const mudarSegredo = async (parcial: Partial<Segredos>) => {
-    if (!segredos) return
-    const novos = { ...segredos, ...parcial }
-    setSegredos(novos)
     try {
-      await window.api.salvarSegredos(novos)
+      await window.api.salvarSegredos(parcial)
+      setSegredos(await window.api.obterSegredos())
     } catch (e) {
       avisar(e instanceof Error ? e.message : String(e), 'erro')
     }
   }
+  /** Login, token ou cabeçalhos guardados, mas nenhum site listado: hoje não vão a lugar nenhum. */
+  const loginSemSite =
+    !!segredos && (!!segredos.usuario || Object.entries(segredos.preenchidos).some(([k, v]) => v && k !== 'senhaProxy')) && !c.sitesLogin.length
   const escolherPasta = async (chave: 'pastaVideo' | 'pastaAudio') => {
     const pasta = await window.api.escolherPasta(c[chave])
     if (pasta) void salvarConfig({ [chave]: pasta })
@@ -637,7 +682,7 @@ export default function Configuracoes() {
           el: (
             <Linha
               rotulo="Enviar para o celular"
-              dica='No celular, abra o Subaru DL → Ajustes → Contas e cookies → "Receber do PC pelo Wi-Fi". Ele mostra um código: é só digitar aqui. Os dois precisam estar no mesmo Wi-Fi. Se ainda não houver cookies.txt, ele é gerado a partir do navegador.'
+              dica='No celular, abra o Subaru DL → Ajustes → Contas e cookies → "Receber do PC pelo Wi-Fi". Ele mostra um código de 16 letras: é só digitar aqui. Os dois precisam estar no mesmo Wi-Fi. Vão só os cookies dos sites de vídeo e imagem; se ainda não houver cookies, eles são gerados a partir do navegador.'
               coluna
             >
               <div className="flex" style={{ flexWrap: 'wrap', gap: 8 }}>
@@ -653,15 +698,15 @@ export default function Configuracoes() {
                 />
                 <input
                   className="campo mono"
-                  style={{ width: 150, textTransform: 'uppercase', letterSpacing: 2 }}
-                  placeholder="Código"
-                  maxLength={10}
+                  style={{ width: 230, textTransform: 'uppercase', letterSpacing: 1 }}
+                  placeholder="Código do celular"
+                  maxLength={24}
                   value={codigoCelular}
                   onChange={(e) => setCodigoCelular(e.target.value)}
                 />
                 <button
                   className="btn pequeno"
-                  disabled={enviandoCelular || !enderecoCelular.trim() || codigoCelular.replace(/[^a-z0-9]/gi, '').length < 8}
+                  disabled={enviandoCelular || !enderecoCelular.trim() || codigoCelular.replace(/[^a-z0-9]/gi, '').length < 16}
                   onClick={enviarAoCelular}
                 >
                   {enviandoCelular ? <RefreshCw className="girando" /> : <Send />} {enviandoCelular ? 'Enviando…' : 'Enviar cookies'}
@@ -716,7 +761,14 @@ export default function Configuracoes() {
               {
                 texto: 'cookies arquivo txt',
                 el: (
-                  <Linha rotulo="Arquivo cookies.txt" dica={c.cookies.arquivo || 'Nenhum escolhido (formato Netscape)'}>
+                  <Linha
+                    rotulo="Arquivo cookies.txt"
+                    dica={
+                      /[\\/]cookies-navegador\.txt$/i.test(c.cookies.arquivo)
+                        ? 'O do programa (gerado ou importado), guardado cifrado neste computador'
+                        : c.cookies.arquivo || 'Nenhum escolhido (formato Netscape)'
+                    }
+                  >
                     <button
                       className="btn pequeno"
                       onClick={async () => {
@@ -740,11 +792,27 @@ export default function Configuracoes() {
           )
         },
         {
+          texto: 'login sites conta usuário senha token cabeçalhos onde usar',
+          el: (
+            <Linha
+              rotulo="Sites onde usar o login"
+              dica={
+                loginSemSite
+                  ? 'Há login guardado, mas nenhum site listado: ele não está sendo usado. Escreva o site (ex.: vimeo.com) e Enter.'
+                  : 'O usuário, a senha, o token e os cabeçalhos abaixo só vão para estes sites, nunca para outros (ex.: vimeo.com; Enter para adicionar)'
+              }
+              coluna
+            >
+              <Etiquetas valores={c.sitesLogin} aoMudar={(sitesLogin) => salvarConfig({ sitesLogin })} placeholder="site.com" />
+            </Linha>
+          )
+        },
+        {
           texto: 'login usuário senha conta',
           el: (
             <Linha rotulo="Usuário e senha do site" dica="Guardados criptografados no cofre do Windows">
               <CampoTexto largura={170} placeholder="usuário" valor={segredos?.usuario ?? ''} aoSalvar={(usuario) => mudarSegredo({ usuario })} />
-              <CampoTexto largura={170} placeholder="senha" senha valor={segredos?.senha ?? ''} aoSalvar={(senha) => mudarSegredo({ senha })} />
+              <CampoSegredo largura={250} placeholder="senha" preenchido={!!segredos?.preenchidos.senha} aoSalvar={(senha) => mudarSegredo({ senha })} />
             </Linha>
           )
         },
@@ -752,7 +820,7 @@ export default function Configuracoes() {
           texto: 'senha do vídeo vimeo protegido',
           el: (
             <Linha rotulo="Senha do vídeo" dica="Para vídeos protegidos por senha (ex.: Vimeo)">
-              <CampoTexto largura={220} senha valor={segredos?.senhaVideo ?? ''} aoSalvar={(senhaVideo) => mudarSegredo({ senhaVideo })} />
+              <CampoSegredo largura={250} preenchido={!!segredos?.preenchidos.senhaVideo} aoSalvar={(senhaVideo) => mudarSegredo({ senhaVideo })} />
             </Linha>
           )
         },
@@ -760,7 +828,7 @@ export default function Configuracoes() {
           texto: 'token bearer autenticação',
           el: (
             <Linha rotulo="Token (Bearer)">
-              <CampoTexto largura={300} senha mono valor={segredos?.token ?? ''} aoSalvar={(token) => mudarSegredo({ token })} />
+              <CampoSegredo largura={300} mono preenchido={!!segredos?.preenchidos.token} aoSalvar={(token) => mudarSegredo({ token })} />
             </Linha>
           )
         },
@@ -768,7 +836,7 @@ export default function Configuracoes() {
           texto: 'cabeçalhos headers http personalizados',
           el: (
             <Linha rotulo="Cabeçalhos HTTP" dica='Um por linha, no formato "Campo: valor"' coluna>
-              <CampoTexto mono multilinha valor={segredos?.cabecalhos ?? ''} aoSalvar={(cabecalhos) => mudarSegredo({ cabecalhos })} />
+              <CampoSegredo mono multilinha preenchido={!!segredos?.preenchidos.cabecalhos} aoSalvar={(cabecalhos) => mudarSegredo({ cabecalhos })} />
             </Linha>
           )
         },
@@ -795,7 +863,7 @@ export default function Configuracoes() {
                       <CampoTexto largura={180} placeholder="127.0.0.1" valor={c.proxy.host} aoSalvar={(host) => salvarConfig({ proxy: { ...c.proxy, host } })} />
                       <CampoTexto largura={80} placeholder="porta" valor={c.proxy.porta} aoSalvar={(porta) => salvarConfig({ proxy: { ...c.proxy, porta } })} />
                       <CampoTexto largura={130} placeholder="usuário" valor={c.proxy.usuario} aoSalvar={(usuario) => salvarConfig({ proxy: { ...c.proxy, usuario } })} />
-                      <CampoTexto largura={130} placeholder="senha" senha valor={segredos?.senhaProxy ?? ''} aoSalvar={(senhaProxy) => mudarSegredo({ senhaProxy })} />
+                      <CampoSegredo largura={200} placeholder="senha" preenchido={!!segredos?.preenchidos.senhaProxy} aoSalvar={(senhaProxy) => mudarSegredo({ senhaProxy })} />
                     </div>
                   </Linha>
                 )
@@ -846,7 +914,7 @@ export default function Configuracoes() {
         {
           texto: 'opções avançadas yt-dlp argumentos extras linha de comando',
           el: (
-            <Linha rotulo="Opções extras do yt-dlp" dica='Vão no fim de todo download. Ex.: --limit-rate 5M --sleep-interval 2' coluna>
+            <Linha rotulo="Opções extras do yt-dlp" dica='Vão no fim de todo download. Ex.: --limit-rate 5M --sleep-interval 2. Opções que rodam programas (--exec, --downloader, --ffmpeg-location…) não são aceitas.' coluna>
               <CampoTexto mono valor={c.argsExtras} aoSalvar={(argsExtras) => salvarConfig({ argsExtras })} />
             </Linha>
           )

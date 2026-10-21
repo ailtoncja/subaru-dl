@@ -104,6 +104,10 @@ Legenda: `[ ]` a fazer · `[x]` pronto
 - [x] 93. Assistente de primeiro uso: pastas, jeito de baixar (vídeo ou áudio, qualidade, formato) e contas (Firefox
   conectado direto; Chrome, Edge e afins pelo cookies.txt da extensão, com o navegador padrão já sugerido). Abre só na
   primeira vez, com "Pular" sempre à vista; depois fica em Ajustes → Sistema
+- [x] 94. Revisão de segurança (0.9.0): motor confere tudo o que vem da interface, versões assinadas pelo autor,
+  ferramentas conferidas por SHA-256, login só nos sites listados e fora da linha de comando, cookies cifrados,
+  envio ao celular só na rede local com código de 16 letras, capas pelo motor e sem DevTools no programa instalado
+  (detalhes no README, seção Segurança)
 
 ---
 
