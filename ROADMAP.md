@@ -133,7 +133,7 @@ Refeita a partir das imagens de referência: barra de título própria, Início 
 Downloads com fila e histórico, Playlists & Lote, Galeria, Logs, Dependências e Configurações.
 
 ## Interface (v0.7) — "Pintura de Rali"
-Refeita do zero com o impeccable: o visual dos carros de rali da Subaru (azul-marinho, amarelo e dourado).
+Refeita do zero com o visual dos carros de rali da Subaru (azul-marinho, amarelo e dourado).
 Três telas em vez de seis: **Baixar** (vídeo, áudio e imagens no mesmo campo, com a prévia e os downloads
 andando logo embaixo), **Downloads** (fila, concluídos e falhas, imagens incluídas) e **Ajustes** (preferências,
 ferramentas e registro). Cada download vira uma linha com placa de número e uma faixa amarela que avança e
